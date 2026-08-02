@@ -17,6 +17,7 @@ export interface DownBlock {
 export interface Shift {
   id: string;
   type: ShiftType;
+  title: string;
   down_length: 30 | 40;
   start_time: string; // ISO
   ended_at: string | null;

@@ -42,7 +42,7 @@ export default function HistoryList({
               {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
               <div className="flex flex-col items-start flex-1">
                 <span className="text-sm font-semibold">
-                  {fmtDateHeader(shift.start_time)} · {shift.type === "tournament" ? "Tournament" : "Cash"}
+                  {shift.title ? `${shift.title} · ` : ""}{fmtDateHeader(shift.start_time)} · {shift.type === "tournament" ? "Tournament" : "Cash"}
                 </span>
                 <span className="text-[11.5px] text-td-muted">
                   {fmtTime(shift.start_time)} · {shift.down_length}m downs · {done}/{shift.blocks.length} logged

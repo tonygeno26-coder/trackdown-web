@@ -20,11 +20,12 @@ export default function NewShiftModal({
   onCreate,
 }: {
   onCancel: () => void;
-  onCreate: (type: ShiftType, downLength: 30 | 40, startTime: string) => void;
+  onCreate: (type: ShiftType, downLength: 30 | 40, startTime: string, title: string) => void;
 }) {
   const [type, setType] = useState<ShiftType | null>(null);
   const [length, setLength] = useState<30 | 40>(30);
   const [startTime, setStartTime] = useState(nearestHalfHour());
+  const [title, setTitle] = useState("");
 
   const buildShiftStartISO = (): string => {
     const [hh, mm] = startTime.split(":").map(Number);
@@ -88,6 +89,17 @@ export default function NewShiftModal({
             )}
 
             <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
+              <span>{type === "tournament" ? "Tournament / room name" : "Room / game name"}</span>
+              <input
+                type="text"
+                placeholder={type === "tournament" ? "e.g. Wynn $200 Deepstack" : "e.g. Bellagio 1/2 NLH"}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] focus:outline focus:outline-2 focus:outline-td-gold"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
               <span>Shift start time</span>
               <input
                 type="time"
@@ -106,7 +118,7 @@ export default function NewShiftModal({
                 Back
               </button>
               <button
-                onClick={() => onCreate(type, type === "cash" ? 30 : length, buildShiftStartISO())}
+                onClick={() => onCreate(type, type === "cash" ? 30 : length, buildShiftStartISO(), title)}
                 className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
               >
                 <Check size={16} /> Build shift

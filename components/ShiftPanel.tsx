@@ -23,9 +23,14 @@ export default function ShiftPanel({
     <>
       <section className="bg-td-surface border border-td-border rounded-2xl px-5.5 py-5 mb-4">
         <div className="flex justify-between items-center mb-1.5">
-          <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
-            {shift.type === "tournament" ? "Tournament" : "Cash Game"} · {shift.down_length}m downs
-          </span>
+          <div>
+            {shift.title && (
+              <div className="text-sm font-semibold text-td-cream mb-0.5">{shift.title}</div>
+            )}
+            <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
+              {shift.type === "tournament" ? "Tournament" : "Cash Game"} · {shift.down_length}m downs
+            </span>
+          </div>
           <button
             onClick={onEndShift}
             className="bg-transparent border border-td-border text-td-muted text-xs font-semibold px-2.5 py-1.5 rounded-md hover:text-td-red hover:border-td-red"
