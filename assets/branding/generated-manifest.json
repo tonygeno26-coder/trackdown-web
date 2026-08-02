@@ -1,16 +1,6 @@
 {
-  "source": "assets/logo-source.jpg",
+  "source": "assets/app-icon-source.png",
   "generated": [
-    {
-      "path": "/Users/anthonygenosa/Downloads/trackdown-web/assets/branding/logo-icon-1024.png",
-      "width": 1024,
-      "height": 1024
-    },
-    {
-      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo-icon.png",
-      "width": 512,
-      "height": 512
-    },
     {
       "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo-header.png",
       "width": 592,
@@ -20,6 +10,16 @@
       "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo.png",
       "width": 640,
       "height": 220
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/assets/branding/logo-icon-1024.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo-icon.png",
+      "width": 512,
+      "height": 512
     },
     {
       "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/apple-touch-icon.png",
