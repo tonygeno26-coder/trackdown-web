@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { PlayingSession } from "@/lib/types";
 import { timeLocalToISO } from "@/lib/playing";
+import { getGamingCategory, stakesOrMinimumLabel } from "@/lib/gaming";
 import {
   PlayingBottomSheet,
   PlayingField,
@@ -35,7 +36,7 @@ export default function EditPlayingSessionModal({
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   })();
 
-  const [title, setTitle] = useState(session.title);
+  const category = getGamingCategory(session);
   const [location, setLocation] = useState(session.location);
   const [game, setGame] = useState(session.game);
   const [stakes, setStakes] = useState(session.stakes);
@@ -46,7 +47,7 @@ export default function EditPlayingSessionModal({
     e.preventDefault();
     if (saving) return;
     onSave({
-      title,
+      title: session.title,
       location,
       game,
       stakes,
@@ -58,10 +59,6 @@ export default function EditPlayingSessionModal({
   return (
     <PlayingBottomSheet title="Edit Session" onClose={onCancel}>
       <form onSubmit={submit} className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
-        <PlayingField label="Session title">
-          <input className={playingInputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
-        </PlayingField>
-
         <PlayingField label="Location">
           <input
             className={playingInputClass}
@@ -79,7 +76,7 @@ export default function EditPlayingSessionModal({
           />
         </PlayingField>
 
-        <PlayingField label="Stakes">
+        <PlayingField label={stakesOrMinimumLabel(session)}>
           <input className={playingInputClass} value={stakes} onChange={(e) => setStakes(e.target.value)} />
         </PlayingField>
 
@@ -92,7 +89,13 @@ export default function EditPlayingSessionModal({
           />
         </PlayingField>
 
-        <PlayingField label={session.session_type === "cash" ? "Initial Buy-in" : "Entry Cost"}>
+        <PlayingField
+          label={
+            category === "poker" && session.session_type === "tournament"
+              ? "Entry Cost"
+              : "Starting Bankroll"
+          }
+        >
           <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
             <span className="font-mono text-td-muted">$</span>
             <input

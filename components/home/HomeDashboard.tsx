@@ -1,0 +1,432 @@
+"use client";
+
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType } from "@/lib/types";
+import { buildBlocks, extendBlocks } from "@/lib/blocks";
+import { GamingCategory } from "@/lib/gaming";
+import EmptyHomeState from "@/components/home/EmptyHomeState";
+import DealerCockpit from "@/components/home/DealerCockpit";
+import GamingCockpit from "@/components/home/GamingCockpit";
+import NewShiftModal from "@/components/NewShiftModal";
+import BlockSheet from "@/components/BlockSheet";
+import EndShiftModal from "@/components/EndShiftModal";
+import LumpSumModal from "@/components/LumpSumModal";
+import NewGamingSessionModal from "@/components/playing/NewGamingSessionModal";
+import AddBuyInModal from "@/components/playing/AddBuyInModal";
+import EditPlayingSessionModal from "@/components/playing/EditPlayingSessionModal";
+import EndPlayingSessionModal from "@/components/playing/EndPlayingSessionModal";
+import AddNoteModal from "@/components/playing/AddNoteModal";
+import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
+import { PlayingShell } from "@/components/playing/PlayingUi";
+
+export default function HomeDashboard({
+  shifts,
+  playingSessions,
+  onShiftsChange,
+  onSessionsChange,
+  setError,
+}: {
+  shifts: Shift[];
+  playingSessions: PlayingSession[];
+  onShiftsChange: (next: Shift[]) => void;
+  onSessionsChange: (next: PlayingSession[]) => void;
+  setError: (msg: string | null) => void;
+}) {
+  const activeShift = shifts.find((s) => s.status === "active") || null;
+  const activeSession = playingSessions.find((s) => s.status === "active") || null;
+  const hasConflict = !!activeShift && !!activeSession;
+
+  const [newShiftOpen, setNewShiftOpen] = useState(false);
+  const [newGamingOpen, setNewGamingOpen] = useState(false);
+  const [blockSheet, setBlockSheet] = useState<{ shift: Shift; block: DownBlock } | null>(null);
+  const [confirmEndShift, setConfirmEndShift] = useState(false);
+  const [lumpSumOpen, setLumpSumOpen] = useState(false);
+  const [addBuyInOpen, setAddBuyInOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [endGamingOpen, setEndGamingOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [resultSession, setResultSession] = useState<PlayingSession | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const shiftTotal = (shift: Shift) =>
+    shift.is_lump_sum
+      ? shift.lump_sum_tips || 0
+      : shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
+  const shiftDoneCount = (shift: Shift) => shift.blocks.filter((b) => b.status === "done").length;
+
+  const guardStart = () => {
+    if (activeShift) {
+      setError("End your current dealer shift before starting a new activity.");
+      return false;
+    }
+    if (activeSession) {
+      setError("End your current gaming session before starting a new activity.");
+      return false;
+    }
+    return true;
+  };
+
+  const createShift = async (
+    type: ShiftType,
+    downLength: 30 | 40,
+    startTime: string,
+    title: string,
+    houseTaxPct: number,
+    hourlyRate: number | null
+  ) => {
+    if (!guardStart()) return;
+    const { data, error: err } = await supabase
+      .from("shifts")
+      .insert({
+        type,
+        down_length: downLength,
+        start_time: startTime,
+        title,
+        house_tax_pct: houseTaxPct,
+        hourly_rate: hourlyRate,
+        status: "active",
+        blocks: buildBlocks(startTime, downLength),
+      })
+      .select()
+      .single();
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange([data as Shift, ...shifts]);
+    setNewShiftOpen(false);
+  };
+
+  const createGamingSession = async (data: {
+    category: GamingCategory;
+    session_type: PlayingSessionType;
+    location: string;
+    game: string;
+    stakes: string;
+    start_time: string;
+    initial_buy_in: number;
+    notes: string;
+  }) => {
+    if (!guardStart()) return;
+    setSaving(true);
+    const { data: row, error: err } = await supabase
+      .from("playing_sessions")
+      .insert({
+        title: data.category,
+        session_type: data.session_type,
+        location: data.location,
+        game: data.game,
+        stakes: data.stakes,
+        start_time: data.start_time,
+        initial_buy_in: data.initial_buy_in,
+        notes: data.notes,
+        status: "active",
+      })
+      .select()
+      .single();
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSessionsChange([row as PlayingSession, ...playingSessions]);
+    setNewGamingOpen(false);
+  };
+
+  const saveBlock = async (updatedBlock: DownBlock) => {
+    if (!blockSheet) return;
+    const shift = blockSheet.shift;
+    const nextBlocks = shift.blocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b));
+    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", shift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, blocks: nextBlocks } : s)));
+    setBlockSheet(null);
+  };
+
+  const quickBlockUpdate = async (block: DownBlock, update: Partial<DownBlock>) => {
+    if (!activeShift) return;
+    const nextBlock = { ...block, ...update };
+    const nextBlocks = activeShift.blocks.map((b) => (b.id === block.id ? nextBlock : b));
+    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === activeShift.id ? { ...s, blocks: nextBlocks } : s)));
+  };
+
+  const endShift = async (
+    settledStatus: "yes" | "no" | "partial" | null,
+    settledAmount: number | null
+  ) => {
+    if (!activeShift) return;
+    const endedAt = new Date().toISOString();
+    const { error: err } = await supabase
+      .from("shifts")
+      .update({
+        status: "completed",
+        ended_at: endedAt,
+        settled_status: settledStatus,
+        settled_amount: settledAmount,
+      })
+      .eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(
+      shifts.map((s) =>
+        s.id === activeShift.id
+          ? { ...s, status: "completed", ended_at: endedAt, settled_status: settledStatus, settled_amount: settledAmount }
+          : s
+      )
+    );
+    setConfirmEndShift(false);
+  };
+
+  const extendShift = async (additionalMinutes: number) => {
+    if (!activeShift) return;
+    const nextBlocks = extendBlocks(activeShift.blocks, activeShift.down_length, additionalMinutes);
+    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === activeShift.id ? { ...s, blocks: nextBlocks } : s)));
+  };
+
+  const logLumpSum = async (amount: number) => {
+    if (!activeShift) return;
+    const { error: err } = await supabase
+      .from("shifts")
+      .update({ is_lump_sum: true, lump_sum_tips: amount })
+      .eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(
+      shifts.map((s) => (s.id === activeShift.id ? { ...s, is_lump_sum: true, lump_sum_tips: amount } : s))
+    );
+    setLumpSumOpen(false);
+  };
+
+  const addBuyIn = async (amount: number) => {
+    if (!activeSession) return;
+    setSaving(true);
+    const nextAdditional = (activeSession.additional_buy_ins || 0) + amount;
+    const { error: err } = await supabase
+      .from("playing_sessions")
+      .update({ additional_buy_ins: nextAdditional })
+      .eq("id", activeSession.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSessionsChange(
+      playingSessions.map((s) =>
+        s.id === activeSession.id ? { ...s, additional_buy_ins: nextAdditional } : s
+      )
+    );
+    setAddBuyInOpen(false);
+  };
+
+  const saveEdit = async (updates: {
+    title: string;
+    location: string;
+    game: string;
+    stakes: string;
+    start_time: string;
+    initial_buy_in: number;
+  }) => {
+    if (!activeSession) return;
+    setSaving(true);
+    const category = activeSession.title;
+    const { error: err } = await supabase
+      .from("playing_sessions")
+      .update({ ...updates, title: category })
+      .eq("id", activeSession.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSessionsChange(
+      playingSessions.map((s) => (s.id === activeSession.id ? { ...s, ...updates, title: category } : s))
+    );
+    setEditOpen(false);
+  };
+
+  const saveNote = async (notes: string) => {
+    if (!activeSession) return;
+    setSaving(true);
+    const { error: err } = await supabase
+      .from("playing_sessions")
+      .update({ notes })
+      .eq("id", activeSession.id);
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSessionsChange(playingSessions.map((s) => (s.id === activeSession.id ? { ...s, notes } : s)));
+    setNoteOpen(false);
+  };
+
+  const endSession = async (data: { cash_out: number; expenses: number; notes: string }) => {
+    if (!activeSession) return;
+    setSaving(true);
+    const endedAt = new Date().toISOString();
+    const { data: row, error: err } = await supabase
+      .from("playing_sessions")
+      .update({
+        status: "completed",
+        ended_at: endedAt,
+        cash_out: data.cash_out,
+        expenses: data.expenses,
+        notes: data.notes,
+      })
+      .eq("id", activeSession.id)
+      .select()
+      .single();
+    setSaving(false);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onSessionsChange(
+      playingSessions.map((s) => (s.id === activeSession.id ? (row as PlayingSession) : s))
+    );
+    setEndGamingOpen(false);
+    setResultSession(row as PlayingSession);
+  };
+
+  return (
+    <PlayingShell>
+      {hasConflict && (
+        <div className="mb-4 rounded-xl border border-td-red/50 bg-td-red/10 px-4 py-3 text-center text-[13px] text-red-300">
+          Both a dealer shift and gaming session are active. End one to continue normally.
+        </div>
+      )}
+
+      <AnimatePresence mode="wait">
+        {resultSession ? (
+          <PlayingSessionResult
+            key="result"
+            session={resultSession}
+            onDismiss={() => setResultSession(null)}
+          />
+        ) : activeShift ? (
+          <DealerCockpit
+            key="dealer"
+            shift={activeShift}
+            total={shiftTotal(activeShift)}
+            doneCount={shiftDoneCount(activeShift)}
+            onLogDown={(block) => setBlockSheet({ shift: activeShift, block })}
+            onBreak={(block) =>
+              quickBlockUpdate(block, { status: "break", table: "", game: "", tips: 0, tournament: "", notes: "" })
+            }
+            onSkip={(block) => quickBlockUpdate(block, { status: "skipped" })}
+            onEndShift={() => setConfirmEndShift(true)}
+            onExtend={extendShift}
+            onLogLumpSum={() => setLumpSumOpen(true)}
+            onBlockTap={(block) => setBlockSheet({ shift: activeShift, block })}
+          />
+        ) : activeSession ? (
+          <GamingCockpit
+            key="gaming"
+            session={activeSession}
+            onAddBuyIn={() => setAddBuyInOpen(true)}
+            onEdit={() => setEditOpen(true)}
+            onAddNote={() => setNoteOpen(true)}
+            onEnd={() => setEndGamingOpen(true)}
+          />
+        ) : (
+          <EmptyHomeState
+            key="empty"
+            onStartDealer={() => (guardStart() ? setNewShiftOpen(true) : undefined)}
+            onStartGaming={() => (guardStart() ? setNewGamingOpen(true) : undefined)}
+          />
+        )}
+      </AnimatePresence>
+
+      {newShiftOpen && <NewShiftModal onCancel={() => setNewShiftOpen(false)} onCreate={createShift} />}
+
+      {newGamingOpen && (
+        <NewGamingSessionModal
+          onCancel={() => setNewGamingOpen(false)}
+          onCreate={createGamingSession}
+          saving={saving}
+        />
+      )}
+
+      {blockSheet && (
+        <BlockSheet
+          shiftType={blockSheet.shift.type}
+          block={blockSheet.block}
+          onCancel={() => setBlockSheet(null)}
+          onSave={saveBlock}
+        />
+      )}
+
+      {lumpSumOpen && activeShift && (
+        <LumpSumModal
+          currentAmount={activeShift.lump_sum_tips}
+          onCancel={() => setLumpSumOpen(false)}
+          onSave={logLumpSum}
+        />
+      )}
+
+      {confirmEndShift && activeShift && (
+        <EndShiftModal
+          shift={activeShift}
+          grossTotal={shiftTotal(activeShift)}
+          onCancel={() => setConfirmEndShift(false)}
+          onConfirm={endShift}
+        />
+      )}
+
+      {addBuyInOpen && activeSession && (
+        <AddBuyInModal
+          isTournament={activeSession.session_type === "tournament"}
+          onCancel={() => setAddBuyInOpen(false)}
+          onSave={addBuyIn}
+          saving={saving}
+        />
+      )}
+
+      {editOpen && activeSession && (
+        <EditPlayingSessionModal
+          session={activeSession}
+          onCancel={() => setEditOpen(false)}
+          onSave={saveEdit}
+          saving={saving}
+        />
+      )}
+
+      {noteOpen && activeSession && (
+        <AddNoteModal
+          notes={activeSession.notes}
+          onCancel={() => setNoteOpen(false)}
+          onSave={saveNote}
+          saving={saving}
+        />
+      )}
+
+      {endGamingOpen && activeSession && (
+        <EndPlayingSessionModal
+          session={activeSession}
+          onCancel={() => setEndGamingOpen(false)}
+          onSave={endSession}
+          saving={saving}
+        />
+      )}
+    </PlayingShell>
+  );
+}

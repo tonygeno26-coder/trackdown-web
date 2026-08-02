@@ -4,16 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Shift, PlayingSession } from "@/lib/types";
-import AppHeader, { MainView } from "@/components/AppHeader";
-import DealingSection from "@/components/dealing/DealingSection";
-import PlayingSection from "@/components/playing/PlayingSection";
-import HistorySection from "@/components/HistorySection";
+import BottomNav, { AppTab } from "@/components/navigation/BottomNav";
+import HomeDashboard from "@/components/home/HomeDashboard";
+import StatsScreen from "@/components/stats/StatsScreen";
+import HistoryScreen from "@/components/history/HistoryScreen";
+import SettingsScreen from "@/components/settings/SettingsScreen";
 
 export default function Home() {
   const [shifts, setShifts] = useState<Shift[] | null>(null);
   const [playingSessions, setPlayingSessions] = useState<PlayingSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<MainView>("dealing");
+  const [tab, setTab] = useState<AppTab>("home");
 
   const loadData = useCallback(async () => {
     const [shiftsRes, sessionsRes] = await Promise.all([
@@ -40,7 +41,7 @@ export default function Home() {
 
   if (shifts === null || playingSessions === null) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 text-td-muted">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-td-muted">
         <Spade size={26} className="animate-pulse text-td-gold" />
         <span>Loading Trackdown…</span>
       </div>
@@ -48,28 +49,22 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen pb-10">
-      <AppHeader view={view} onViewChange={setView} />
-
+    <div className="min-h-screen bg-td-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {error && (
-        <div className="max-w-[520px] mx-auto mt-2.5 px-4 py-2.5 bg-[#331d1d] border border-td-red rounded-lg text-[13px] text-center">
+        <div className="mx-auto mt-2.5 max-w-[520px] rounded-lg border border-td-red bg-td-red/15 px-4 py-2.5 text-center text-[13px] text-red-300">
           {error}
+          <button
+            onClick={() => setError(null)}
+            className="ml-2 text-[11px] underline opacity-80"
+          >
+            dismiss
+          </button>
         </div>
       )}
 
-      <main className={`mx-auto max-w-[520px] px-5 pb-8 ${view === "playing" ? "pt-2" : "pt-4.5"}`}>
-        {view === "dealing" && (
-          <DealingSection shifts={shifts} onShiftsChange={setShifts} setError={setError} />
-        )}
-        {view === "playing" && (
-          <PlayingSection
-            sessions={playingSessions}
-            onSessionsChange={setPlayingSessions}
-            setError={setError}
-          />
-        )}
-        {view === "history" && (
-          <HistorySection
+      <main className="mx-auto max-w-[520px] px-5 pt-2">
+        {tab === "home" && (
+          <HomeDashboard
             shifts={shifts}
             playingSessions={playingSessions}
             onShiftsChange={setShifts}
@@ -77,7 +72,20 @@ export default function Home() {
             setError={setError}
           />
         )}
+        {tab === "stats" && <StatsScreen shifts={shifts} playingSessions={playingSessions} />}
+        {tab === "history" && (
+          <HistoryScreen
+            shifts={shifts}
+            playingSessions={playingSessions}
+            onShiftsChange={setShifts}
+            onSessionsChange={setPlayingSessions}
+            setError={setError}
+          />
+        )}
+        {tab === "settings" && <SettingsScreen />}
       </main>
+
+      <BottomNav active={tab} onChange={setTab} />
     </div>
   );
 }
