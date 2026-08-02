@@ -216,6 +216,10 @@ export function getPotCalcQuestions(difficulty?: string): CalculationQuestion[] 
   return POT_CALC_QUESTIONS.filter((q) => q.difficulty === difficulty);
 }
 
+export function getPotCalcQuestionById(id: string): CalculationQuestion | undefined {
+  return POT_CALC_QUESTIONS.find((q) => q.id === id);
+}
+
 export function getRandomPotCalcQuestion(
   difficulty: string,
   excludeId?: string

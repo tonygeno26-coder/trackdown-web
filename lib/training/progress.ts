@@ -1,10 +1,12 @@
 import {
   ACCEPTABLE_ACTION_THRESHOLD,
+  BlackjackStats,
   ModuleStats,
   PokerAction,
   ScenarioStats,
   TrainingProgress,
 } from "./types";
+import { BlackjackAction, HandCategory } from "./blackjack";
 
 export const TRAINING_PROGRESS_KEY = "trackdown_training_progress_v1";
 
@@ -24,9 +26,24 @@ function emptyScenarioStats(): ScenarioStats {
   };
 }
 
+function emptyBlackjackStats(): BlackjackStats {
+  return {
+    total: emptyModuleStats(),
+    hard: emptyModuleStats(),
+    soft: emptyModuleStats(),
+    pair: emptyModuleStats(),
+    surrender: emptyModuleStats(),
+    mistakeQueue: [],
+    totalResponseMs: 0,
+    responseCount: 0,
+    speedBestStreak: 0,
+    speedCurrentStreak: 0,
+  };
+}
+
 export function createDefaultProgress(): TrainingProgress {
   return {
-    version: 1,
+    version: 2,
     dealer: {
       completedTipIds: [],
       potCalc: emptyModuleStats(),
@@ -36,6 +53,7 @@ export function createDefaultProgress(): TrainingProgress {
       scenarios: emptyScenarioStats(),
       potOdds: emptyModuleStats(),
     },
+    blackjack: emptyBlackjackStats(),
   };
 }
 
@@ -56,16 +74,39 @@ function isScenarioStats(value: unknown): value is ScenarioStats {
   return typeof v.acceptable === "number" && typeof v.byPosition === "object" && typeof v.byTag === "object";
 }
 
+function isBlackjackStats(value: unknown): value is BlackjackStats {
+  if (!value || typeof value !== "object") return false;
+  const v = value as BlackjackStats;
+  return (
+    isModuleStats(v.total) &&
+    isModuleStats(v.hard) &&
+    isModuleStats(v.soft) &&
+    isModuleStats(v.pair) &&
+    isModuleStats(v.surrender) &&
+    Array.isArray(v.mistakeQueue)
+  );
+}
+
+function migrateV1ToV2(v1: Record<string, unknown>): TrainingProgress {
+  const base = createDefaultProgress();
+  const dealer = v1.dealer as TrainingProgress["dealer"] | undefined;
+  const poker = v1.poker as TrainingProgress["poker"] | undefined;
+  if (dealer) base.dealer = dealer;
+  if (poker) base.poker = poker;
+  return base;
+}
+
 function isTrainingProgress(value: unknown): value is TrainingProgress {
   if (!value || typeof value !== "object") return false;
-  const v = value as TrainingProgress;
+  const v = value as Record<string, unknown>;
   return (
-    v.version === 1 &&
-    Array.isArray(v.dealer?.completedTipIds) &&
-    isModuleStats(v.dealer?.potCalc) &&
-    isModuleStats(v.dealer?.ploCalc) &&
-    isScenarioStats(v.poker?.scenarios) &&
-    isModuleStats(v.poker?.potOdds)
+    v.version === 2 &&
+    Array.isArray((v.dealer as TrainingProgress["dealer"])?.completedTipIds) &&
+    isModuleStats((v.dealer as TrainingProgress["dealer"])?.potCalc) &&
+    isModuleStats((v.dealer as TrainingProgress["dealer"])?.ploCalc) &&
+    isScenarioStats((v.poker as TrainingProgress["poker"])?.scenarios) &&
+    isModuleStats((v.poker as TrainingProgress["poker"])?.potOdds) &&
+    isBlackjackStats(v.blackjack)
   );
 }
 
@@ -75,6 +116,9 @@ export function loadTrainingProgress(): TrainingProgress {
     const raw = localStorage.getItem(TRAINING_PROGRESS_KEY);
     if (!raw) return createDefaultProgress();
     const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return createDefaultProgress();
+    const v = parsed as { version?: number };
+    if (v.version === 1) return migrateV1ToV2(parsed as Record<string, unknown>);
     if (!isTrainingProgress(parsed)) return createDefaultProgress();
     return parsed;
   } catch {
@@ -184,12 +228,82 @@ export function recordScenarioResult(
   };
 }
 
+export function recordBlackjackResult(
+  progress: TrainingProgress,
+  opts: {
+    correct: boolean;
+    category: HandCategory | "surrender";
+    situationKey: string;
+    responseMs?: number;
+    isSpeedMode?: boolean;
+  }
+): TrainingProgress {
+  const bj = progress.blackjack;
+  const total = applyModuleResult(bj.total, opts.correct);
+
+  let hard = bj.hard;
+  let soft = bj.soft;
+  let pair = bj.pair;
+  let surrender = bj.surrender;
+
+  if (opts.category === "hard") hard = applyModuleResult(hard, opts.correct);
+  if (opts.category === "soft") soft = applyModuleResult(soft, opts.correct);
+  if (opts.category === "pair") pair = applyModuleResult(pair, opts.correct);
+  if (opts.category === "surrender") surrender = applyModuleResult(surrender, opts.correct);
+
+  let mistakeQueue = [...bj.mistakeQueue];
+  if (!opts.correct && !mistakeQueue.includes(opts.situationKey)) {
+    mistakeQueue.push(opts.situationKey);
+  } else if (opts.correct) {
+    mistakeQueue = mistakeQueue.filter((k) => k !== opts.situationKey);
+  }
+
+  let speedCurrentStreak = bj.speedCurrentStreak;
+  let speedBestStreak = bj.speedBestStreak;
+  if (opts.isSpeedMode) {
+    speedCurrentStreak = opts.correct ? speedCurrentStreak + 1 : 0;
+    speedBestStreak = Math.max(speedBestStreak, speedCurrentStreak);
+  }
+
+  const totalResponseMs = bj.totalResponseMs + (opts.responseMs ?? 0);
+  const responseCount = bj.responseCount + (opts.responseMs != null ? 1 : 0);
+
+  return {
+    ...progress,
+    blackjack: {
+      total,
+      hard,
+      soft,
+      pair,
+      surrender,
+      mistakeQueue,
+      totalResponseMs,
+      responseCount,
+      speedCurrentStreak,
+      speedBestStreak,
+    },
+  };
+}
+
+export function averageBlackjackResponseMs(stats: BlackjackStats): number {
+  if (stats.responseCount === 0) return 0;
+  return Math.round(stats.totalResponseMs / stats.responseCount);
+}
+
 export function isActionAcceptable(
   recommended: { action: PokerAction; frequency: number }[],
   chosen: PokerAction
 ): boolean {
   const match = recommended.find((r) => r.action === chosen);
   return (match?.frequency ?? 0) >= ACCEPTABLE_ACTION_THRESHOLD;
+}
+
+export function isBlackjackActionCorrect(
+  recommended: BlackjackAction,
+  alternatives: BlackjackAction[],
+  chosen: BlackjackAction
+): boolean {
+  return chosen === recommended || alternatives.includes(chosen);
 }
 
 export function accuracyPct(stats: ModuleStats): number {

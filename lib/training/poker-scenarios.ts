@@ -707,6 +707,10 @@ export const POKER_SCENARIOS: PokerScenario[] = [
   }),
 ];
 
+export function getScenarioById(id: string): PokerScenario | undefined {
+  return POKER_SCENARIOS.find((s) => s.id === id);
+}
+
 export function getRandomScenario(excludeId?: string): PokerScenario {
   const pool = POKER_SCENARIOS.filter((s) => s.id !== excludeId);
   return pool[Math.floor(Math.random() * pool.length)] || POKER_SCENARIOS[0];

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { DEALER_TIPS } from "@/lib/training/dealer-tips";
 import {
   accuracyPct,
+  averageBlackjackResponseMs,
   loadTrainingProgress,
   scenarioAcceptableAccuracy,
   scenarioPreferredAccuracy,
@@ -46,6 +47,31 @@ export default function TrainingProgress({ onBack }: { onBack: () => void }) {
           value={`${accuracyPct(progress.dealer.ploCalc)}%`}
         />
         <TrainStatsRow label="Best calculation streak" value={String(bestCalcStreak)} />
+      </PlayingCard>
+
+      <PlayingCard className="mb-4 space-y-2 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Blackjack</p>
+        <TrainStatsRow
+          label="Total hands"
+          value={String(progress.blackjack.total.attempted)}
+        />
+        <TrainStatsRow
+          label="Overall accuracy"
+          value={`${accuracyPct(progress.blackjack.total)}%`}
+        />
+        <TrainStatsRow
+          label="Hard / soft / pair"
+          value={`${accuracyPct(progress.blackjack.hard)}% / ${accuracyPct(progress.blackjack.soft)}% / ${accuracyPct(progress.blackjack.pair)}%`}
+        />
+        <TrainStatsRow label="Best streak" value={String(progress.blackjack.total.bestStreak)} />
+        <TrainStatsRow
+          label="Avg response time"
+          value={
+            progress.blackjack.responseCount > 0
+              ? `${(averageBlackjackResponseMs(progress.blackjack) / 1000).toFixed(1)}s`
+              : "—"
+          }
+        />
       </PlayingCard>
 
       <PlayingCard className="space-y-2 p-5">

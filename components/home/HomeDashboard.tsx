@@ -5,7 +5,10 @@ import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
-import { GamingCategory } from "@/lib/gaming";
+import { GamingCategory, getGamingCategory } from "@/lib/gaming";
+import { saveHand } from "@/lib/hands/storage";
+import { SavedHandInput } from "@/lib/hands/types";
+import HandBuilderModal from "@/components/train/my-hands/HandBuilderModal";
 import { createPreviewDealerShift, createPreviewGamingSession } from "@/lib/preview-data";
 import EmptyHomeState from "@/components/home/EmptyHomeState";
 import DealerCockpit from "@/components/home/DealerCockpit";
@@ -74,6 +77,7 @@ export default function HomeDashboard({
   const [endGamingOpen, setEndGamingOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [resultSession, setResultSession] = useState<PlayingSession | null>(null);
+  const [handBuilderOpen, setHandBuilderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const shiftTotal = (shift: Shift) =>
@@ -344,6 +348,21 @@ export default function HomeDashboard({
     setResultSession(row as PlayingSession);
   };
 
+  const saveHandFromSession = async (input: SavedHandInput) => {
+    setSaving(true);
+    const { error: err } = await saveHand(input);
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setHandBuilderOpen(false);
+    setResultSession(null);
+  };
+
+  const isPokerResult =
+    resultSession != null && getGamingCategory(resultSession) === "poker";
+
   return (
     <PlayingShell>
       <DeveloperPreviewBanner />
@@ -360,6 +379,8 @@ export default function HomeDashboard({
             key="result"
             session={resultSession}
             onDismiss={() => setResultSession(null)}
+            showSaveHandPrompt={isPokerResult}
+            onSaveHand={isPokerResult ? () => setHandBuilderOpen(true) : undefined}
           />
         ) : activeShift ? (
           <DealerCockpit
@@ -463,6 +484,21 @@ export default function HomeDashboard({
           session={activeSession}
           onCancel={() => setEndGamingOpen(false)}
           onSave={endSession}
+          saving={saving}
+        />
+      )}
+
+      {handBuilderOpen && resultSession && (
+        <HandBuilderModal
+          defaults={{
+            session_id: resultSession.id,
+            casino: resultSession.location,
+            game: resultSession.game,
+            stakes: resultSession.stakes,
+            played_at: resultSession.ended_at ?? resultSession.start_time,
+          }}
+          onCancel={() => setHandBuilderOpen(false)}
+          onSave={saveHandFromSession}
           saving={saving}
         />
       )}

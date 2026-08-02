@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { getRandomPotCalcQuestion } from "@/lib/training/dealer-questions";
+import { useRef, useState } from "react";
 import { numericAnswerMatches } from "@/lib/training/calculations";
+import { recordAdaptiveAttempt, loadAdaptiveTraining } from "@/lib/training/adaptive-storage";
+import { computeTopicStats, difficultyForTopic } from "@/lib/training/adaptive-recommendations";
+import { pickAdaptivePotCalcQuestion } from "@/lib/training/adaptive-session";
+import { AdaptiveTopic } from "@/lib/training/adaptive-types";
 import {
   loadTrainingProgress,
   saveTrainingProgress,
   recordPotCalcResult,
-  accuracyPct,
 } from "@/lib/training/progress";
 import { CalculationQuestion } from "@/lib/training/types";
 import {
-  DifficultyPicker,
   PrimaryPlayingButton,
   TrainFeedback,
   TrainHeader,
@@ -21,50 +22,67 @@ import {
   TrainStickyFooter,
 } from "@/components/train/TrainingUi";
 
-export default function PotCalculationTrainer({ onBack }: { onBack: () => void }) {
-  const [difficulty, setDifficulty] = useState("beginner");
+export default function PotCalculationTrainer({
+  onBack,
+  focusTopic = "pot_calculations",
+}: {
+  onBack: () => void;
+  focusTopic?: AdaptiveTopic;
+}) {
+  const topic = focusTopic === "pot_calculations" ? focusTopic : "pot_calculations";
   const [question, setQuestion] = useState<CalculationQuestion>(() =>
-    getRandomPotCalcQuestion("beginner")
+    pickAdaptivePotCalcQuestion(topic)
   );
   const [answer, setAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
-  const [stats, setStats] = useState(() => loadTrainingProgress().dealer.potCalc);
+  const [adaptiveStats, setAdaptiveStats] = useState(() =>
+    computeTopicStats(topic, loadAdaptiveTraining().attempts)
+  );
+  const startMs = useRef(Date.now());
+
+  const refreshAdaptiveStats = () => {
+    setAdaptiveStats(computeTopicStats(topic, loadAdaptiveTraining().attempts));
+  };
 
   const submit = () => {
     const userVal = parseFloat(answer);
     const isCorrect = numericAnswerMatches(userVal, question.correctAnswer);
+    const responseMs = Date.now() - startMs.current;
     setCorrect(isCorrect);
     setSubmitted(true);
+
+    recordAdaptiveAttempt({
+      date: new Date().toISOString(),
+      topic,
+      difficulty: question.difficulty,
+      correct: isCorrect,
+      responseMs,
+      questionId: question.id,
+    });
+
     const progress = recordPotCalcResult(loadTrainingProgress(), isCorrect);
     saveTrainingProgress(progress);
-    setStats(progress.dealer.potCalc);
+    refreshAdaptiveStats();
   };
 
   const next = () => {
-    setQuestion(getRandomPotCalcQuestion(difficulty, question.id));
+    setQuestion(pickAdaptivePotCalcQuestion(topic, question.id));
     setAnswer("");
     setSubmitted(false);
-  };
-
-  const changeDifficulty = (d: string) => {
-    setDifficulty(d);
-    setQuestion(getRandomPotCalcQuestion(d));
-    setAnswer("");
-    setSubmitted(false);
+    startMs.current = Date.now();
   };
 
   return (
     <div className="pb-28">
-      <TrainHeader title="Pot Calculation" subtitle="NLHE pot, call, and raise math." onBack={onBack} />
+      <TrainHeader title="Pot Calculation" subtitle="Adaptive NLHE pot, call, and raise math." onBack={onBack} />
 
       <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Accuracy" value={`${accuracyPct(stats)}%`} />
-        <TrainStatsRow label="Streak" value={String(stats.currentStreak)} />
-        <TrainStatsRow label="Best streak" value={String(stats.bestStreak)} />
+        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
+        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
+        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
+        <TrainStatsRow label="Difficulty" value={difficultyForTopic(topic)} />
       </div>
-
-      <DifficultyPicker value={difficulty} onChange={changeDifficulty} />
 
       <TrainQuestionCard className="mt-4">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-td-muted">

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Hand } from "lucide-react";
 import { PlayingSession } from "@/lib/types";
 import {
   cashOutLabel,
@@ -14,14 +15,18 @@ import {
   totalBuyIns,
 } from "@/lib/playing";
 import { fmtTime } from "@/lib/blocks";
-import { PlayingCard, PrimaryPlayingButton, playingFadeIn } from "@/components/playing/PlayingUi";
+import { PlayingCard, PrimaryPlayingButton, SecondaryPlayingButton, playingFadeIn } from "@/components/playing/PlayingUi";
 
 export default function PlayingSessionResult({
   session,
   onDismiss,
+  showSaveHandPrompt,
+  onSaveHand,
 }: {
   session: PlayingSession;
   onDismiss: () => void;
+  showSaveHandPrompt?: boolean;
+  onSaveHand?: () => void;
 }) {
   const net = netResult(session);
   const hours = hoursPlayed(session.start_time, session.ended_at);
@@ -98,7 +103,26 @@ export default function PlayingSessionResult({
         <p className="px-1 text-[13px] italic leading-relaxed text-td-muted">{session.notes}</p>
       )}
 
-      <PrimaryPlayingButton onClick={onDismiss}>Done</PrimaryPlayingButton>
+      {showSaveHandPrompt && onSaveHand && (
+        <PlayingCard className="space-y-3 p-5">
+          <p className="text-center text-[14px] font-semibold text-td-cream">
+            Would you like to save a hand?
+          </p>
+          <p className="text-center text-[12px] text-td-muted">
+            Save a memorable hand from this session for study and review.
+          </p>
+          <PrimaryPlayingButton type="button" onClick={onSaveHand}>
+            <Hand size={16} /> Save a Hand
+          </PrimaryPlayingButton>
+          <SecondaryPlayingButton type="button" onClick={onDismiss}>
+            No Thanks
+          </SecondaryPlayingButton>
+        </PlayingCard>
+      )}
+
+      {(!showSaveHandPrompt || !onSaveHand) && (
+        <PrimaryPlayingButton onClick={onDismiss}>Done</PrimaryPlayingButton>
+      )}
     </motion.div>
   );
 }

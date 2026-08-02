@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { getRandomPotOddsQuestion } from "@/lib/training/pot-odds-questions";
+import { useRef, useState } from "react";
 import { numericAnswerMatches } from "@/lib/training/calculations";
+import { recordAdaptiveAttempt, loadAdaptiveTraining } from "@/lib/training/adaptive-storage";
+import { computeTopicStats, difficultyForTopic } from "@/lib/training/adaptive-recommendations";
+import { pickAdaptivePotOddsQuestion } from "@/lib/training/adaptive-session";
+import { AdaptiveTopic, PokerTopic } from "@/lib/training/adaptive-types";
 import {
   loadTrainingProgress,
   saveTrainingProgress,
   recordPotOddsResult,
-  accuracyPct,
 } from "@/lib/training/progress";
 import { PotOddsQuestion } from "@/lib/training/types";
 import {
-  DifficultyPicker,
   PrimaryPlayingButton,
   TrainFeedback,
   TrainHeader,
@@ -21,48 +22,67 @@ import {
   TrainStickyFooter,
 } from "@/components/train/TrainingUi";
 
-export default function PotOddsTrainer({ onBack }: { onBack: () => void }) {
-  const [difficulty, setDifficulty] = useState("beginner");
-  const [question, setQuestion] = useState<PotOddsQuestion>(() => getRandomPotOddsQuestion("beginner"));
+export default function PotOddsTrainer({
+  onBack,
+  focusTopic = "bet_sizing",
+}: {
+  onBack: () => void;
+  focusTopic?: PokerTopic | AdaptiveTopic;
+}) {
+  const topic: PokerTopic = focusTopic === "bet_sizing" || !focusTopic ? "bet_sizing" : (focusTopic as PokerTopic);
+  const [question, setQuestion] = useState<PotOddsQuestion>(() =>
+    pickAdaptivePotOddsQuestion(topic)
+  );
   const [equityAnswer, setEquityAnswer] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [correct, setCorrect] = useState(false);
-  const [stats, setStats] = useState(() => loadTrainingProgress().poker.potOdds);
+  const [adaptiveStats, setAdaptiveStats] = useState(() =>
+    computeTopicStats(topic, loadAdaptiveTraining().attempts)
+  );
+  const startMs = useRef(Date.now());
+
+  const refreshAdaptiveStats = () => {
+    setAdaptiveStats(computeTopicStats(topic, loadAdaptiveTraining().attempts));
+  };
 
   const submit = () => {
     const userVal = parseFloat(equityAnswer);
     const isCorrect = numericAnswerMatches(userVal, question.correctEquityPct, 1);
+    const responseMs = Date.now() - startMs.current;
     setCorrect(isCorrect);
     setSubmitted(true);
+
+    recordAdaptiveAttempt({
+      date: new Date().toISOString(),
+      topic,
+      difficulty: question.difficulty,
+      correct: isCorrect,
+      responseMs,
+      questionId: question.id,
+    });
+
     const progress = recordPotOddsResult(loadTrainingProgress(), isCorrect);
     saveTrainingProgress(progress);
-    setStats(progress.poker.potOdds);
+    refreshAdaptiveStats();
   };
 
   const next = () => {
-    setQuestion(getRandomPotOddsQuestion(difficulty, question.id));
+    setQuestion(pickAdaptivePotOddsQuestion(topic, question.id));
     setEquityAnswer("");
     setSubmitted(false);
-  };
-
-  const changeDifficulty = (d: string) => {
-    setDifficulty(d);
-    setQuestion(getRandomPotOddsQuestion(d));
-    setEquityAnswer("");
-    setSubmitted(false);
+    startMs.current = Date.now();
   };
 
   return (
     <div className="pb-28">
-      <TrainHeader title="Pot Odds" subtitle="Calculate required equity for profitable calls." onBack={onBack} />
+      <TrainHeader title="Pot Odds" subtitle="Adaptive bet sizing and required equity drills." onBack={onBack} />
 
       <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Accuracy" value={`${accuracyPct(stats)}%`} />
-        <TrainStatsRow label="Streak" value={String(stats.currentStreak)} />
-        <TrainStatsRow label="Best streak" value={String(stats.bestStreak)} />
+        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
+        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
+        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
+        <TrainStatsRow label="Difficulty" value={difficultyForTopic(topic)} />
       </div>
-
-      <DifficultyPicker value={difficulty} onChange={changeDifficulty} />
 
       <TrainQuestionCard className="mt-4">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-td-muted">

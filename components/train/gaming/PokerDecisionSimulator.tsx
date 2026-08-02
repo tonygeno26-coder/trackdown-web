@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { getRandomScenario } from "@/lib/training/poker-scenarios";
+import { useRef, useState } from "react";
+import { recordAdaptiveAttempt, loadAdaptiveTraining } from "@/lib/training/adaptive-storage";
+import { computeTopicStats } from "@/lib/training/adaptive-recommendations";
+import { pickAdaptiveScenario } from "@/lib/training/adaptive-session";
+import { mapScenarioToTopic } from "@/lib/training/adaptive-topics";
+import { PokerTopic } from "@/lib/training/adaptive-types";
 import {
   isActionAcceptable,
   loadTrainingProgress,
   saveTrainingProgress,
   recordScenarioResult,
-  scenarioPreferredAccuracy,
-  scenarioAcceptableAccuracy,
 } from "@/lib/training/progress";
 import { PokerAction, PokerScenario } from "@/lib/training/types";
 import PokerTable from "@/components/train/gaming/PokerTable";
@@ -32,18 +34,44 @@ function actionButtonLabel(scenario: PokerScenario, action: PokerAction): string
   return scenario.actionLabels?.[action] ?? ACTION_LABELS[action];
 }
 
-export default function PokerDecisionSimulator({ onBack }: { onBack: () => void }) {
-  const [scenario, setScenario] = useState<PokerScenario>(() => getRandomScenario());
+export default function PokerDecisionSimulator({
+  onBack,
+  focusTopic,
+}: {
+  onBack: () => void;
+  focusTopic?: PokerTopic;
+}) {
+  const [scenario, setScenario] = useState<PokerScenario>(() => pickAdaptiveScenario(focusTopic));
   const [chosen, setChosen] = useState<PokerAction | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [stats, setStats] = useState(() => loadTrainingProgress().poker.scenarios);
+  const topic = focusTopic ?? mapScenarioToTopic(scenario);
+  const [adaptiveStats, setAdaptiveStats] = useState(() =>
+    computeTopicStats(topic, loadAdaptiveTraining().attempts)
+  );
+  const startMs = useRef(Date.now());
+
+  const refreshAdaptiveStats = (t: PokerTopic) => {
+    setAdaptiveStats(computeTopicStats(t, loadAdaptiveTraining().attempts));
+  };
 
   const submit = (action: PokerAction) => {
     if (submitted) return;
+    const responseMs = Date.now() - startMs.current;
     setChosen(action);
     setSubmitted(true);
     const preferred = action === scenario.preferredAction;
     const acceptable = isActionAcceptable(scenario.recommended, action);
+    const scenarioTopic = mapScenarioToTopic(scenario);
+
+    recordAdaptiveAttempt({
+      date: new Date().toISOString(),
+      topic: scenarioTopic,
+      difficulty: scenario.difficulty,
+      correct: preferred || acceptable,
+      responseMs,
+      questionId: scenario.id,
+    });
+
     const progress = recordScenarioResult(loadTrainingProgress(), {
       preferred,
       acceptable,
@@ -51,28 +79,29 @@ export default function PokerDecisionSimulator({ onBack }: { onBack: () => void 
       tags: scenario.tags,
     });
     saveTrainingProgress(progress);
-    setStats(progress.poker.scenarios);
+    refreshAdaptiveStats(scenarioTopic);
   };
 
   const next = () => {
-    setScenario(getRandomScenario(scenario.id));
+    setScenario(pickAdaptiveScenario(focusTopic, scenario.id));
     setChosen(null);
     setSubmitted(false);
+    startMs.current = Date.now();
   };
 
   return (
     <div className="pb-28">
       <TrainHeader
         title="Decision Trainer"
-        subtitle="Solver-style training scenarios — not a computed Nash equilibrium."
+        subtitle="Adaptive solver-style scenarios — not a computed Nash equilibrium."
         onBack={onBack}
       />
 
       <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Preferred accuracy" value={`${scenarioPreferredAccuracy(stats)}%`} />
-        <TrainStatsRow label="Acceptable accuracy" value={`${scenarioAcceptableAccuracy(stats)}%`} />
-        <TrainStatsRow label="Streak" value={String(stats.currentStreak)} />
-        <TrainStatsRow label="Completed" value={String(stats.attempted)} />
+        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
+        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
+        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
+        <TrainStatsRow label="Focus" value={focusTopic ?? mapScenarioToTopic(scenario)} />
       </div>
 
       <PokerTable scenario={scenario} highlightHero={submitted} />

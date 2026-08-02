@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Monitor, Trash2, FlaskConical, Eye, EyeOff } from "lucide-react";
+import { Monitor, Trash2, FlaskConical, Eye, EyeOff, Sparkles } from "lucide-react";
 import { AppTab } from "@/components/navigation/BottomNav";
 import { Shift, PlayingSession } from "@/lib/types";
 import { useAppSettings } from "@/components/settings/AppSettingsContext";
@@ -9,6 +9,10 @@ import { useDeveloperPreview, DeveloperPreviewMode } from "@/components/dev/Deve
 import { seedDemoData, clearDemoData, countDemoRecords } from "@/lib/demo-data";
 import { supabase } from "@/lib/supabase";
 import { APP_VERSION, getBuildIdentifier } from "@/lib/version";
+import {
+  isDeveloperSolverProPreview,
+  setDeveloperSolverProPreview,
+} from "@/lib/premium/entitlements";
 import { SettingsSection, settingsInputClass } from "@/components/settings/SettingsUi";
 import { PrimaryPlayingButton, SecondaryPlayingButton, PlayingCard } from "@/components/playing/PlayingUi";
 
@@ -76,6 +80,11 @@ export default function DeveloperSettings({
   const [confirmClearDemo, setConfirmClearDemo] = useState(false);
   const [demoCounts, setDemoCounts] = useState({ shifts: 0, sessions: 0 });
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
+  const [solverProPreview, setSolverProPreview] = useState(false);
+
+  useEffect(() => {
+    setSolverProPreview(isDeveloperSolverProPreview());
+  }, []);
 
   const activeShift = shifts.find((s) => s.status === "active" && !s.is_demo);
   const activeSession = playingSessions.find((s) => s.status === "active" && !s.is_demo);
@@ -179,6 +188,23 @@ export default function DeveloperSettings({
             <EyeOff size={16} /> Clear Preview Override
           </SecondaryPlayingButton>
         )}
+      </div>
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Premium Preview</p>
+        <SecondaryPlayingButton
+          type="button"
+          onClick={() => {
+            const next = !solverProPreview;
+            setDeveloperSolverProPreview(next);
+            setSolverProPreview(next);
+            setActionMessage(next ? "Solver Pro preview unlocked" : "Solver Pro preview disabled");
+          }}
+          className={solverProPreview ? "border-td-gold/50 text-td-goldsoft" : ""}
+        >
+          <Sparkles size={16} /> {solverProPreview ? "Disable" : "Preview"} Solver Pro Unlocked
+        </SecondaryPlayingButton>
+        <p className="text-[11px] text-td-muted">UI-only entitlement override. No payment record created.</p>
       </div>
 
       <div className="space-y-2">

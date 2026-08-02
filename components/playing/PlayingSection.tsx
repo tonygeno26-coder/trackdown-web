@@ -4,12 +4,16 @@ import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PlayingSession } from "@/lib/types";
+import { getGamingCategory } from "@/lib/gaming";
+import { saveHand } from "@/lib/hands/storage";
+import { SavedHandInput } from "@/lib/hands/types";
 import NewPlayingSessionModal from "@/components/playing/NewPlayingSessionModal";
 import ActivePlayingSession from "@/components/playing/ActivePlayingSession";
 import AddBuyInModal from "@/components/playing/AddBuyInModal";
 import EditPlayingSessionModal from "@/components/playing/EditPlayingSessionModal";
 import EndPlayingSessionModal from "@/components/playing/EndPlayingSessionModal";
 import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
+import HandBuilderModal from "@/components/train/my-hands/HandBuilderModal";
 import PlayingEmptyState from "@/components/playing/PlayingEmptyState";
 import { PlayingShell } from "@/components/playing/PlayingUi";
 
@@ -27,6 +31,7 @@ export default function PlayingSection({
   const [editOpen, setEditOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   const [resultSession, setResultSession] = useState<PlayingSession | null>(null);
+  const [handBuilderOpen, setHandBuilderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const activeSession = sessions.find((s) => s.status === "active") || null;
@@ -133,6 +138,21 @@ export default function PlayingSection({
     setResultSession(row as PlayingSession);
   };
 
+  const saveHandFromSession = async (input: SavedHandInput) => {
+    setSaving(true);
+    const { error: err } = await saveHand(input);
+    setSaving(false);
+    if (err) {
+      setError(err);
+      return;
+    }
+    setHandBuilderOpen(false);
+    setResultSession(null);
+  };
+
+  const isPokerResult =
+    resultSession != null && getGamingCategory(resultSession) === "poker";
+
   return (
     <PlayingShell>
       <AnimatePresence mode="wait">
@@ -141,6 +161,8 @@ export default function PlayingSection({
             key="result"
             session={resultSession}
             onDismiss={() => setResultSession(null)}
+            showSaveHandPrompt={isPokerResult}
+            onSaveHand={isPokerResult ? () => setHandBuilderOpen(true) : undefined}
           />
         ) : !activeSession ? (
           <PlayingEmptyState key="empty" onStart={() => setNewOpen(true)} />
@@ -184,6 +206,20 @@ export default function PlayingSection({
             session={activeSession}
             onCancel={() => setEndOpen(false)}
             onSave={endSession}
+            saving={saving}
+          />
+        )}
+        {handBuilderOpen && resultSession && (
+          <HandBuilderModal
+            defaults={{
+              session_id: resultSession.id,
+              casino: resultSession.location,
+              game: resultSession.game,
+              stakes: resultSession.stakes,
+              played_at: resultSession.ended_at ?? resultSession.start_time,
+            }}
+            onCancel={() => setHandBuilderOpen(false)}
+            onSave={saveHandFromSession}
             saving={saving}
           />
         )}
