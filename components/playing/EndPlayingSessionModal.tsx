@@ -1,9 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { PlayingSession } from "@/lib/types";
 import { cashOutLabel } from "@/lib/playing";
+import {
+  PlayingBottomSheet,
+  PlayingField,
+  PrimaryPlayingButton,
+  SecondaryPlayingButton,
+  playingInputClass,
+} from "@/components/playing/PlayingUi";
 
 export default function EndPlayingSessionModal({
   session,
@@ -31,22 +38,10 @@ export default function EndPlayingSessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-        className="w-full max-w-[460px] bg-td-surface border border-td-border rounded-t-2xl px-5 pt-5 pb-6 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="font-display font-bold text-lg tracking-wide">End session</h2>
-          <button type="button" onClick={onCancel} className="text-td-muted hover:text-td-cream p-1 rounded">
-            <X size={18} />
-          </button>
-        </div>
-
-        <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-          <span>{cashOutLabel(session.session_type)}</span>
-          <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+    <PlayingBottomSheet title="End Session" onClose={onCancel}>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <PlayingField label={cashOutLabel(session.session_type)}>
+          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
             <span className="font-mono text-td-muted">$</span>
             <input
               type="number"
@@ -58,14 +53,13 @@ export default function EndPlayingSessionModal({
               placeholder="0"
               value={cashOut}
               onChange={(e) => setCashOut(e.target.value)}
-              className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[20px] font-semibold text-td-cream focus:outline-none"
             />
           </div>
-        </label>
+        </PlayingField>
 
-        <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-          <span>Expenses (optional)</span>
-          <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+        <PlayingField label="Expenses (optional)">
+          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
             <span className="font-mono text-td-muted">$</span>
             <input
               type="number"
@@ -75,39 +69,30 @@ export default function EndPlayingSessionModal({
               placeholder="0"
               value={expenses}
               onChange={(e) => setExpenses(e.target.value)}
-              className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono font-semibold text-td-cream focus:outline-none"
             />
           </div>
-        </label>
+        </PlayingField>
 
-        <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-          <span>Notes</span>
+        <PlayingField label="Notes">
           <input
-            className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] focus:outline focus:outline-2 focus:outline-td-gold"
+            className={playingInputClass}
             placeholder="optional"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
-        </label>
+        </PlayingField>
 
-        <div className="flex gap-2.5 mt-1.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={saving}
-            className="flex-1 rounded-[10px] py-3 font-bold text-sm bg-td-surface2 border border-td-border text-td-cream disabled:opacity-40"
-          >
+        <div className="mt-2 grid grid-cols-2 gap-3">
+          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] disabled:opacity-40 hover:enabled:bg-td-goldsoft"
-          >
-            <Check size={16} /> {saving ? "Saving…" : "End & save"}
-          </button>
+          </SecondaryPlayingButton>
+          <PrimaryPlayingButton type="submit" disabled={saving}>
+            <Check size={16} />
+            {saving ? "Saving…" : "End & Save"}
+          </PrimaryPlayingButton>
         </div>
       </form>
-    </div>
+    </PlayingBottomSheet>
   );
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { Check } from "lucide-react";
+import {
+  PlayingBottomSheet,
+  PlayingField,
+  PrimaryPlayingButton,
+  SecondaryPlayingButton,
+} from "@/components/playing/PlayingUi";
 
 export default function AddBuyInModal({
   isTournament,
@@ -25,24 +31,13 @@ export default function AddBuyInModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-        className="w-full max-w-[460px] bg-td-surface border border-td-border rounded-t-2xl px-5 pt-5 pb-6 flex flex-col gap-3.5"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="font-display font-bold text-lg tracking-wide">
-            {isTournament ? "Add Re-entry / Add-on" : "Add Buy-in"}
-          </h2>
-          <button type="button" onClick={onCancel} className="text-td-muted hover:text-td-cream p-1 rounded">
-            <X size={18} />
-          </button>
-        </div>
-
-        <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-          <span>Amount</span>
-          <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+    <PlayingBottomSheet
+      title={isTournament ? "Add Re-entry / Add-on" : "Add Buy-in"}
+      onClose={onCancel}
+    >
+      <form onSubmit={submit} className="flex flex-col gap-5">
+        <PlayingField label="Amount">
+          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
             <span className="font-mono text-td-muted">$</span>
             <input
               type="number"
@@ -54,29 +49,21 @@ export default function AddBuyInModal({
               placeholder="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[20px] font-semibold text-td-cream focus:outline-none"
             />
           </div>
-        </label>
+        </PlayingField>
 
-        <div className="flex gap-2.5 mt-1.5">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={saving}
-            className="flex-1 rounded-[10px] py-3 font-bold text-sm bg-td-surface2 border border-td-border text-td-cream disabled:opacity-40"
-          >
+        <div className="grid grid-cols-2 gap-3">
+          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] disabled:opacity-40 hover:enabled:bg-td-goldsoft"
-          >
-            <Check size={16} /> {saving ? "Saving…" : "Add"}
-          </button>
+          </SecondaryPlayingButton>
+          <PrimaryPlayingButton type="submit" disabled={saving}>
+            <Check size={16} />
+            {saving ? "Saving…" : "Add"}
+          </PrimaryPlayingButton>
         </div>
       </form>
-    </div>
+    </PlayingBottomSheet>
   );
 }

@@ -57,7 +57,7 @@ export default function Home() {
         </div>
       )}
 
-      <main className="max-w-[520px] mx-auto px-5 pt-4.5 pb-5">
+      <main className={`mx-auto max-w-[520px] px-5 pb-8 ${view === "playing" ? "pt-2" : "pt-4.5"}`}>
         {view === "dealing" && (
           <DealingSection shifts={shifts} onShiftsChange={setShifts} setError={setError} />
         )}

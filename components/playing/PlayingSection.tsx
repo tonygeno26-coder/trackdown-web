@@ -1,7 +1,7 @@
 "use client";
 
+import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { Plus, Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { PlayingSession } from "@/lib/types";
 import NewPlayingSessionModal from "@/components/playing/NewPlayingSessionModal";
@@ -10,6 +10,8 @@ import AddBuyInModal from "@/components/playing/AddBuyInModal";
 import EditPlayingSessionModal from "@/components/playing/EditPlayingSessionModal";
 import EndPlayingSessionModal from "@/components/playing/EndPlayingSessionModal";
 import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
+import PlayingEmptyState from "@/components/playing/PlayingEmptyState";
+import { PlayingShell } from "@/components/playing/PlayingUi";
 
 export default function PlayingSection({
   sessions,
@@ -131,73 +133,61 @@ export default function PlayingSection({
     setResultSession(row as PlayingSession);
   };
 
-  if (resultSession) {
-    return (
-      <PlayingSessionResult session={resultSession} onDismiss={() => setResultSession(null)} />
-    );
-  }
-
   return (
-    <>
-      {!activeSession ? (
-        <div className="text-center py-12 px-6 bg-td-surface rounded-2xl border border-td-border">
-          <div className="w-13 h-13 rounded-full bg-td-surface2 flex items-center justify-center mx-auto mb-4 text-td-gold">
-            <Spade size={26} />
-          </div>
-          <h2 className="font-display font-bold text-xl mb-1.5">No session running</h2>
-          <p className="text-td-muted text-[13.5px] mb-5 max-w-[280px] mx-auto">
-            Track buy-ins, cash-outs, and your hourly win rate while you play.
-          </p>
-          <button
-            onClick={() => setNewOpen(true)}
-            className="flex items-center justify-center gap-2 mx-auto rounded-[10px] py-3 px-6 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
-          >
-            <Plus size={17} /> Start playing session
-          </button>
-        </div>
-      ) : (
-        <ActivePlayingSession
-          session={activeSession}
-          onAddBuyIn={() => setAddBuyInOpen(true)}
-          onEdit={() => setEditOpen(true)}
-          onEnd={() => setEndOpen(true)}
-        />
-      )}
+    <PlayingShell>
+      <AnimatePresence mode="wait">
+        {resultSession ? (
+          <PlayingSessionResult
+            key="result"
+            session={resultSession}
+            onDismiss={() => setResultSession(null)}
+          />
+        ) : !activeSession ? (
+          <PlayingEmptyState key="empty" onStart={() => setNewOpen(true)} />
+        ) : (
+          <ActivePlayingSession
+            key="active"
+            session={activeSession}
+            onAddBuyIn={() => setAddBuyInOpen(true)}
+            onEdit={() => setEditOpen(true)}
+            onEnd={() => setEndOpen(true)}
+          />
+        )}
+      </AnimatePresence>
 
-      {newOpen && (
-        <NewPlayingSessionModal
-          onCancel={() => setNewOpen(false)}
-          onCreate={createSession}
-          saving={saving}
-        />
-      )}
-
-      {addBuyInOpen && activeSession && (
-        <AddBuyInModal
-          isTournament={activeSession.session_type === "tournament"}
-          onCancel={() => setAddBuyInOpen(false)}
-          onSave={addBuyIn}
-          saving={saving}
-        />
-      )}
-
-      {editOpen && activeSession && (
-        <EditPlayingSessionModal
-          session={activeSession}
-          onCancel={() => setEditOpen(false)}
-          onSave={saveEdit}
-          saving={saving}
-        />
-      )}
-
-      {endOpen && activeSession && (
-        <EndPlayingSessionModal
-          session={activeSession}
-          onCancel={() => setEndOpen(false)}
-          onSave={endSession}
-          saving={saving}
-        />
-      )}
-    </>
+      <AnimatePresence>
+        {newOpen && (
+          <NewPlayingSessionModal
+            onCancel={() => setNewOpen(false)}
+            onCreate={createSession}
+            saving={saving}
+          />
+        )}
+        {addBuyInOpen && activeSession && (
+          <AddBuyInModal
+            isTournament={activeSession.session_type === "tournament"}
+            onCancel={() => setAddBuyInOpen(false)}
+            onSave={addBuyIn}
+            saving={saving}
+          />
+        )}
+        {editOpen && activeSession && (
+          <EditPlayingSessionModal
+            session={activeSession}
+            onCancel={() => setEditOpen(false)}
+            onSave={saveEdit}
+            saving={saving}
+          />
+        )}
+        {endOpen && activeSession && (
+          <EndPlayingSessionModal
+            session={activeSession}
+            onCancel={() => setEndOpen(false)}
+            onSave={endSession}
+            saving={saving}
+          />
+        )}
+      </AnimatePresence>
+    </PlayingShell>
   );
 }
