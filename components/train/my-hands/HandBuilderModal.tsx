@@ -71,12 +71,13 @@ export default function HandBuilderModal({
 
   const submit = () => {
     if (saving) return;
+    const [year, month, day] = playedAt.split("-").map(Number);
     onSave({
       session_id: defaults?.session_id ?? null,
       casino,
       game,
       stakes,
-      played_at: new Date(playedAt).toISOString(),
+      played_at: new Date(year, month - 1, day, 12, 0, 0, 0).toISOString(),
       hero_position: heroPosition,
       villain_position: villainPosition,
       effective_stack: effectiveStack,
