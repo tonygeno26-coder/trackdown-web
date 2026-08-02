@@ -6,11 +6,11 @@ import { demoSolverProvider, SOLVER_PRO_FEATURES } from "@/lib/solver/demo-provi
 import { SolverScenario } from "@/lib/solver/types";
 import { parseCardList } from "@/lib/cards";
 import PremiumBadge from "@/components/train/premium/PremiumBadge";
-import SolverSummaryCard from "@/components/train/premium/SolverSummaryCard";
-import RangePreview from "@/components/train/premium/RangePreview";
-import FrequencyBreakdown from "@/components/train/premium/FrequencyBreakdown";
-import BetSizeComparison from "@/components/train/premium/BetSizeComparison";
-import ExplanationPanel from "@/components/train/premium/ExplanationPanel";
+import { SolverSummaryCard } from "@/components/train/premium/SolverSummaryCard";
+import { RangePreview } from "@/components/train/premium/RangePreview";
+import { FrequencyBreakdown } from "@/components/train/premium/FrequencyBreakdown";
+import { BetSizeComparison } from "@/components/train/premium/BetSizeComparison";
+import { ExplanationPanel } from "@/components/train/premium/ExplanationPanel";
 import { PrimaryButton, StatCard } from "@/components/ui";
 import { DrillScreen, DrillHeader } from "@/components/train/shared";
 

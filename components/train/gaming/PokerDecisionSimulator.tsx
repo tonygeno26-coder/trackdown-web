@@ -15,7 +15,7 @@ import {
 import { PokerAction, PokerScenario } from "@/lib/training/types";
 import PokerTable from "@/components/train/gaming/PokerTable";
 import PokerScenarioResult from "@/components/train/gaming/PokerScenarioResult";
-import PokerActionButtons from "@/components/train/gaming/PokerActionButtons";
+import { PokerActionButtons } from "@/components/train/gaming/PokerActionButtons";
 import { PrimaryButton } from "@/components/ui";
 import {
   DrillScreen,

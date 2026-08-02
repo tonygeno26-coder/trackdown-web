@@ -10,7 +10,7 @@ import {
   ReplayDecisionPoint,
 } from "@/lib/hands/replay-strategy";
 import CardRow from "@/components/cards/CardRow";
-import PokerActionButtons, { POKER_ACTION_LABELS } from "@/components/train/gaming/PokerActionButtons";
+import { PokerActionButtons, POKER_ACTION_LABELS } from "@/components/train/gaming/PokerActionButtons";
 import {
   DrillScreen,
   DrillHeader,

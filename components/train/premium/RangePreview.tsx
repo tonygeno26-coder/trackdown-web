@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/lib/cards";
+import { ParsedCard } from "@/lib/cards";
 import CardRow from "@/components/cards/CardRow";
 import { SurfaceCard } from "@/components/ui";
 
@@ -9,8 +9,8 @@ export function RangePreview({
   boardCards,
   actionHistory,
 }: {
-  heroCards: Card[];
-  boardCards: Card[];
+  heroCards: ParsedCard[];
+  boardCards: ParsedCard[];
   actionHistory: string;
 }) {
   return (

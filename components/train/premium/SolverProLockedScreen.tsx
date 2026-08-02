@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Sparkles, Lock, RotateCcw } from "lucide-react";
 import PremiumBadge from "@/components/train/premium/PremiumBadge";
 import PricingPreviewModal from "@/components/train/premium/PricingPreviewModal";
-import SolverSummaryCard from "@/components/train/premium/SolverSummaryCard";
+import { SolverSummaryCard } from "@/components/train/premium/SolverSummaryCard";
 import { isDeveloperSolverProPreview } from "@/lib/premium/entitlements";
 import { SOLVER_PRO_FEATURES } from "@/lib/solver/demo-provider";
 import { PrimaryButton, SecondaryButton, SurfaceCard, InlineFeedback } from "@/components/ui";

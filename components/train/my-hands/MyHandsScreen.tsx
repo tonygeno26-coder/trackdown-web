@@ -21,7 +21,9 @@ import {
   EmptyState,
   LoadingState,
   ErrorState,
-} from "@/components/ui";: SavedHandFilters = {
+} from "@/components/ui";
+
+const EMPTY_FILTERS: SavedHandFilters = {
   search: "",
   casino: "",
   game: "",
