@@ -12,6 +12,7 @@ import SettingsScreen from "@/components/settings/SettingsScreen";
 import TrainScreen from "@/components/train/TrainScreen";
 import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
 import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
+import DeveloperPreviewGuard from "@/components/dev/DeveloperPreviewGuard";
 import { LoadingState, ErrorState } from "@/components/ui";
 import { fadeSlide } from "@/components/ui/motion";
 
@@ -122,6 +123,7 @@ export default function Home() {
   return (
     <AppSettingsProvider>
       <DeveloperPreviewProvider>
+        <DeveloperPreviewGuard />
         <TrackdownApp />
       </DeveloperPreviewProvider>
     </AppSettingsProvider>
