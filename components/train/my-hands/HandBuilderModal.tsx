@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Check } from "lucide-react";
 import { SavedHandInput, POKER_POSITIONS, HAND_RESULT_OPTIONS } from "@/lib/hands/types";
 import { parseActionHistoryText } from "@/lib/hands/replay-strategy";
+import { parseCardList } from "@/lib/cards";
+import CardPicker from "@/components/cards/CardPicker";
+import CardRow from "@/components/cards/CardRow";
 import { PlayingBottomSheet } from "@/components/playing/PlayingUi";
 import {
   FormField,
@@ -157,12 +160,20 @@ export default function HandBuilderModal({
             <FormField label="Effective Stack">
               <TextInput value={effectiveStack} onChange={(e) => setEffectiveStack(e.target.value)} placeholder="e.g. 100bb" />
             </FormField>
-            <FormField label="Hero Cards">
-              <TextInput value={heroCards} onChange={(e) => setHeroCards(e.target.value)} placeholder="e.g. Ah Kh" required />
-            </FormField>
-            <FormField label="Board Cards">
-              <TextInput value={boardCards} onChange={(e) => setBoardCards(e.target.value)} placeholder="e.g. Kc 7d 2s" />
-            </FormField>
+            <CardPicker
+              label="Hero Cards"
+              value={heroCards}
+              onChange={setHeroCards}
+              maxCards={game.toLowerCase().includes("plo") ? 4 : 2}
+              selectedPreviewSize="large"
+            />
+            <CardPicker
+              label="Board Cards"
+              value={boardCards}
+              onChange={setBoardCards}
+              maxCards={5}
+              selectedPreviewSize="medium"
+            />
           </FormSection>
         )}
 
@@ -194,6 +205,12 @@ export default function HandBuilderModal({
 
         {step === 3 && (
           <FormSection title="Review">
+            <div className="mb-4 space-y-3">
+              <CardRow cards={parseCardList(heroCards)} size="large" highlighted overlap />
+              {boardCards.trim() && (
+                <CardRow cards={parseCardList(boardCards)} size="medium" overlap />
+              )}
+            </div>
             <div className="space-y-2 text-[13px]">
               <ReviewRow label="Game" value={`${game} · ${stakes}`} />
               <ReviewRow label="Location" value={casino || "—"} />

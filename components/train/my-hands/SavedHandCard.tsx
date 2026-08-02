@@ -23,16 +23,16 @@ export default function SavedHandCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-td-lg border border-td-border/80 bg-td-surface/90 p-4 text-left shadow-td-card transition-colors hover:border-td-gold/40"
+      className="w-full rounded-td-lg border border-td-border/80 bg-td-surface/90 p-3 text-left shadow-td-card transition-colors hover:border-td-gold/40 sm:p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <CardRow cards={heroCards} size="small" />
+            <CardRow cards={heroCards} size="thumbnail" overlap />
             {boardCards.length > 0 && (
               <>
-                <span className="text-td-muted">|</span>
-                <CardRow cards={boardCards} size="small" />
+                <span className="text-td-muted/60" aria-hidden>|</span>
+                <CardRow cards={boardCards} size="thumbnail" overlap />
               </>
             )}
           </div>

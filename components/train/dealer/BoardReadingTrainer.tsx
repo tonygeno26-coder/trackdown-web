@@ -25,6 +25,7 @@ export default function BoardReadingTrainer({ onBack }: { onBack: () => void }) 
   const progress = loadTrainingProgress().dealer.boardReading;
 
   const correct = selected !== null && scenario.winningHandIds.includes(selected);
+  const isPlo = scenario.gameType === "plo";
 
   const submit = () => {
     if (!selected) return;
@@ -56,39 +57,65 @@ export default function BoardReadingTrainer({ onBack }: { onBack: () => void }) 
     <DrillScreen>
       <DrillHeader
         title="Board Reading"
-        subtitle={scenario.gameType === "plo" ? "PLO — use exactly 2 hole + 3 board" : "Hold'em best hand"}
+        subtitle={isPlo ? "PLO — use exactly 2 hole + 3 board" : "Hold'em best hand"}
         onBack={onBack}
       />
       <DrillStatsStrip rows={[{ label: "Accuracy", value: `${accuracyPct(progress)}%` }]} />
       <DrillPromptCard meta={`${scenario.difficulty} · ${scenario.gameType}`} prompt="Which player has the best hand?" />
-      <div className="my-4">
-        <p className="mb-2 text-[11px] font-semibold uppercase text-td-muted">Board</p>
-        <CardRow cards={boardCards} size="medium" />
+
+      <div className="my-3 rounded-xl border border-td-border/60 bg-td-surface2/30 px-3 py-4">
+        <p className="mb-2 text-center text-[10px] font-semibold uppercase text-td-muted">Board</p>
+        <CardRow cards={boardCards} size="medium" overlap />
       </div>
-      <div className="space-y-3">
-        {scenario.hands.map((h) => (
-          <button
-            key={h.id}
-            type="button"
-            disabled={submitted}
-            onClick={() => setSelected(h.id)}
-            className={`w-full rounded-xl border p-4 text-left transition ${
-              selected === h.id ? "border-td-gold bg-td-gold/10" : "border-td-border bg-td-surface2/50"
-            }`}
-          >
-            <p className="mb-2 text-[13px] font-semibold text-td-cream">{h.label}</p>
-            <CardRow cards={parseCardList(h.cards)} size="small" />
-          </button>
-        ))}
+
+      <div className="space-y-2.5">
+        {scenario.hands.map((h) => {
+          const isWinner = submitted && scenario.winningHandIds.includes(h.id);
+          const isSelected = selected === h.id;
+          return (
+            <button
+              key={h.id}
+              type="button"
+              disabled={submitted}
+              onClick={() => setSelected(h.id)}
+              className={`w-full rounded-xl border p-3 text-left transition sm:p-4 ${
+                isSelected ? "border-td-gold bg-td-gold/10" : "border-td-border bg-td-surface2/50"
+              } ${isWinner ? "ring-2 ring-td-goldsoft/50" : ""}`}
+              aria-pressed={isSelected}
+            >
+              <div className="mb-2 flex items-center gap-2">
+                <p className="text-[13px] font-semibold text-td-cream">{h.label}</p>
+                {isWinner && (
+                  <span className="rounded-full border border-td-goldsoft/60 bg-td-goldsoft/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-td-goldsoft">
+                    Best hand
+                  </span>
+                )}
+                {submitted && !isWinner && isSelected && (
+                  <span className="rounded-full border border-td-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-td-muted">
+                    Not best
+                  </span>
+                )}
+              </div>
+              <CardRow cards={parseCardList(h.cards)} size="small" overlap />
+            </button>
+          );
+        })}
       </div>
+
       {submitted && (
         <div className="mt-4">
           <DrillResultCard correct={correct} title={correct ? "Correct" : "Incorrect"}>
             <p>{scenario.explanation}</p>
+            {isPlo && (
+              <p className="mt-2 text-[12px] text-td-muted">
+                PLO rule: exactly 2 hole cards + 3 board cards.
+              </p>
+            )}
             {scenario.caveat && <p className="mt-2 italic text-td-muted">{scenario.caveat}</p>}
           </DrillResultCard>
         </div>
       )}
+
       <DrillNavigation>
         {!submitted ? (
           <PrimaryButton type="button" onClick={submit} disabled={!selected}>Submit</PrimaryButton>

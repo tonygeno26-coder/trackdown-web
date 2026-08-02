@@ -66,10 +66,12 @@ export default function HiLoTrainer({ onBack }: { onBack: () => void }) {
       <DrillHeader title="Split Pot / Hi-Lo" subtitle="Quartering, odd chips, scoops. House rules may vary." onBack={onBack} />
       <DrillStatsStrip rows={[{ label: "Accuracy", value: `${accuracyPct(progress)}%` }]} />
       <DrillPromptCard meta={scenario.difficulty} prompt="How is this pot awarded?" />
-      <div className="my-4">
-        <p className="mb-2 text-[11px] font-semibold uppercase text-td-muted">Board</p>
-        <CardRow cards={parseCardList(scenario.board)} size="medium" />
+
+      <div className="my-3 rounded-xl border border-td-border/60 bg-td-surface2/30 px-3 py-4">
+        <p className="mb-2 text-center text-[10px] font-semibold uppercase text-td-muted">Board</p>
+        <CardRow cards={parseCardList(scenario.board)} size="medium" overlap />
       </div>
+
       <div className="space-y-2">
         {(["high", "low", "split"] as AnswerMode[]).map((mode) => (
           <button
@@ -80,6 +82,7 @@ export default function HiLoTrainer({ onBack }: { onBack: () => void }) {
             className={`w-full rounded-xl border px-4 py-3 text-left text-[14px] font-semibold capitalize ${
               answer === mode ? "border-td-gold bg-td-gold/10 text-td-goldsoft" : "border-td-border text-td-cream"
             }`}
+            aria-pressed={answer === mode}
           >
             {mode === "high" && "High only (or scoop)"}
             {mode === "low" && "Low only"}
@@ -87,6 +90,7 @@ export default function HiLoTrainer({ onBack }: { onBack: () => void }) {
           </button>
         ))}
       </div>
+
       {submitted && (
         <div className="mt-4">
           <DrillResultCard correct={correct} title={correct ? "Correct" : "Review"}>
@@ -96,6 +100,7 @@ export default function HiLoTrainer({ onBack }: { onBack: () => void }) {
           </DrillResultCard>
         </div>
       )}
+
       <DrillNavigation>
         {!submitted ? (
           <PrimaryButton type="button" onClick={submit} disabled={!answer}>Submit</PrimaryButton>

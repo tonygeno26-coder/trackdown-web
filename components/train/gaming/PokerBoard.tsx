@@ -2,7 +2,7 @@
 
 import CardRow from "@/components/cards/CardRow";
 import { ParsedCard } from "@/lib/cards";
-import { CardSize } from "@/components/cards/PlayingCard";
+import { CardSize } from "@/components/cards/types";
 
 export default function PokerBoard({
   cards,
@@ -15,8 +15,8 @@ export default function PokerBoard({
 }) {
   if (street === "preflop") {
     return (
-      <div className="flex h-[4.25rem] items-center justify-center">
-        <span className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted/70">
+      <div className="flex h-[4.5rem] items-center justify-center sm:h-[4.75rem]">
+        <span className="text-[10px] font-semibold uppercase tracking-[1px] text-td-muted/70">
           Preflop
         </span>
       </div>
@@ -27,8 +27,8 @@ export default function PokerBoard({
   const visible = cards.slice(0, slots);
 
   return (
-    <div className="flex min-h-[4.25rem] items-center justify-center">
-      <CardRow cards={visible} size={size} gapClass="gap-1" />
+    <div className="flex min-h-[4.5rem] items-center justify-center sm:min-h-[4.75rem]">
+      <CardRow cards={visible} size={size} overlap gapClass="gap-0" />
     </div>
   );
 }

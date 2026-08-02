@@ -29,7 +29,7 @@ const config: Config = {
       boxShadow: {
         "td-glow": "0 0 48px color-mix(in srgb, #c8202f 28%, transparent)",
         "td-glow-sm": "0 0 24px color-mix(in srgb, #c8202f 18%, transparent)",
-        "td-card": "0 1px 0 color-mix(in srgb, #eceef0 4%, transparent)",
+        "td-card": "0 2px 6px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, #eceef0 8%, transparent)",
       },
       backgroundImage: {
         "playing-radial":

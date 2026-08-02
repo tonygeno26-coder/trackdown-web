@@ -10,6 +10,7 @@ import {
   ReplayDecisionPoint,
 } from "@/lib/hands/replay-strategy";
 import CardRow from "@/components/cards/CardRow";
+import CardFan from "@/components/cards/CardFan";
 import { PokerActionButtons, POKER_ACTION_LABELS } from "@/components/train/gaming/PokerActionButtons";
 import {
   DrillScreen,
@@ -19,6 +20,13 @@ import {
   DrillResultCard,
 } from "@/components/train/shared";
 import { PrimaryButton, SurfaceCard } from "@/components/ui";
+
+function boardForStreet(fullBoard: string, street: string): string {
+  const cards = fullBoard.split(/[\s,]+/).filter(Boolean);
+  const limit =
+    street === "preflop" ? 0 : street === "flop" ? 3 : street === "turn" ? 4 : street === "river" ? 5 : cards.length;
+  return cards.slice(0, limit).join(" ");
+}
 
 export default function HandReviewScreen({
   hand,
@@ -31,10 +39,16 @@ export default function HandReviewScreen({
   const [step, setStep] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [selected, setSelected] = useState<PokerAction | null>(null);
+  const [dealKey, setDealKey] = useState(0);
 
   const current: ReplayDecisionPoint | undefined = points[step];
   const heroCards = parseCardList(hand.hero_cards);
-  const boardCards = parseCardList(current?.board && current.board !== "—" ? current.board : hand.board_cards);
+  const isPlo = heroCards.length === 4;
+  const boardStr =
+    current?.board && current.board !== "—"
+      ? current.board
+      : boardForStreet(hand.board_cards, current?.street ?? "river");
+  const boardCards = parseCardList(boardStr);
   const done = step >= points.length;
 
   const handleSelect = (action: PokerAction) => {
@@ -47,6 +61,7 @@ export default function HandReviewScreen({
     setStep((s) => s + 1);
     setRevealed(false);
     setSelected(null);
+    setDealKey((k) => k + 1);
   };
 
   const result =
@@ -60,15 +75,23 @@ export default function HandReviewScreen({
         onBack={onBack}
       />
 
-      <SurfaceCard className="mb-4 space-y-3 p-5 text-center">
-        <CardRow cards={heroCards} size="medium" highlighted />
-        {boardCards.length > 0 && (
-          <>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-td-muted">Board</p>
-            <CardRow cards={boardCards} size="medium" />
-          </>
+      <SurfaceCard className="mb-4 space-y-3 p-4 text-center sm:p-5">
+        {isPlo ? (
+          <CardFan cards={heroCards} highlighted />
+        ) : (
+          <CardRow cards={heroCards} size="hero" highlighted />
         )}
-        <p className="text-[12px] text-td-muted">
+
+        {boardCards.length > 0 && (
+          <div key={dealKey} className="motion-safe:animate-[fadeIn_0.35s_ease-out]">
+            <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wide text-td-muted">
+              Board · {current?.street ?? "river"}
+            </p>
+            <CardRow cards={boardCards} size="medium" overlap />
+          </div>
+        )}
+
+        <p className="text-[11px] text-td-muted">
           Stack {hand.effective_stack} · Result: {hand.result}
         </p>
       </SurfaceCard>
