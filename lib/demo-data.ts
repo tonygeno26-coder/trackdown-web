@@ -11,6 +11,9 @@ function shiftEnd(startISO: string, hours: number): string {
 }
 
 export async function seedDemoData(): Promise<{ error: string | null }> {
+  const cleared = await clearDemoData();
+  if (cleared.error) return cleared;
+
   const tournamentStart = hoursAgo(48);
   const cashStart = hoursAgo(36);
   const homeStart = hoursAgo(24);
