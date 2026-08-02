@@ -41,3 +41,38 @@ alter table shifts add column if not exists hourly_rate numeric;
 
 alter table shifts drop constraint if exists shifts_type_check;
 alter table shifts add constraint shifts_type_check check (type in ('tournament', 'cash', 'homegame'));
+
+-- Playing sessions (separate from dealer shifts)
+create table if not exists playing_sessions (
+  id uuid primary key default gen_random_uuid(),
+  session_type text not null check (
+    session_type in ('cash', 'tournament')
+  ),
+  status text not null default 'active' check (
+    status in ('active', 'completed')
+  ),
+  title text not null default '',
+  location text not null default '',
+  game text not null default '',
+  stakes text not null default '',
+  start_time timestamptz not null,
+  ended_at timestamptz,
+  initial_buy_in numeric not null default 0,
+  additional_buy_ins numeric not null default 0,
+  cash_out numeric,
+  expenses numeric not null default 0,
+  notes text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists playing_sessions_status_idx on playing_sessions (status);
+create index if not exists playing_sessions_start_time_idx on playing_sessions (start_time desc);
+
+alter table playing_sessions enable row level security;
+
+drop policy if exists "Allow all for anon" on playing_sessions;
+create policy "Allow all for anon"
+  on playing_sessions
+  for all
+  using (true)
+  with check (true);

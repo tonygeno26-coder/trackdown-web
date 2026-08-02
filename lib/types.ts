@@ -31,3 +31,24 @@ export interface Shift {
   blocks: DownBlock[];
   created_at: string;
 }
+
+export type PlayingSessionType = "cash" | "tournament";
+export type PlayingSessionStatus = "active" | "completed";
+
+export interface PlayingSession {
+  id: string;
+  session_type: PlayingSessionType;
+  status: PlayingSessionStatus;
+  title: string;
+  location: string;
+  game: string;
+  stakes: string;
+  start_time: string;
+  ended_at: string | null;
+  initial_buy_in: number;
+  additional_buy_ins: number;
+  cash_out: number | null;
+  expenses: number;
+  notes: string;
+  created_at: string;
+}
