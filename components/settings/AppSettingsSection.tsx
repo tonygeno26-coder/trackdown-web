@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef } from "react";
-import { ChevronRight, Info } from "lucide-react";
+import Image from "next/image";
+import { ChevronRight } from "lucide-react";
 import { AppSettingsUpdate } from "@/lib/settings";
 import { APP_VERSION, getBuildIdentifier } from "@/lib/version";
 import { SettingsField, SettingsSection, settingsInputClass } from "@/components/settings/SettingsUi";
@@ -54,8 +55,8 @@ export default function AppSettingsSection({
         onClick={handleVersionTap}
         className="flex w-full items-center gap-3 rounded-xl border border-td-border/80 bg-td-surface2/50 px-4 py-4 text-left"
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-td-surface2 text-td-gold">
-          <Info size={18} strokeWidth={1.75} />
+        <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-td-bg ring-1 ring-td-border/60">
+          <Image src="/logo-icon.png" alt="" width={40} height={40} className="h-10 w-10 object-contain" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold text-td-cream">About Trackdown</span>

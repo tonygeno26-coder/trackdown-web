@@ -8,9 +8,11 @@
     "start": "next start -p $PORT",
     "lint": "next lint",
     "test": "vitest run",
-    "validate:training": "npx tsx scripts/validate-training-content.ts"
+    "validate:training": "npx tsx scripts/validate-training-content.ts",
+    "generate:branding": "node scripts/generate-branding-assets.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.5.0",
     "@capacitor/ios": "^8.5.0",
@@ -27,6 +29,7 @@
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.39",
+    "sharp": "^0.35.3",
     "tailwindcss": "^3.4.4",
     "tsx": "^4.23.4",
     "typescript": "^5.5.3",

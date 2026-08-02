@@ -1,0 +1,236 @@
+{
+  "source": "assets/logo-source.jpg",
+  "generated": [
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/assets/branding/logo-icon-1024.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo-icon.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo-header.png",
+      "width": 592,
+      "height": 168
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/logo.png",
+      "width": 640,
+      "height": 220
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/apple-touch-icon.png",
+      "width": 180,
+      "height": 180
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/icon-192.png",
+      "width": 192,
+      "height": 192
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/icon-512.png",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/favicon-32.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/favicon-16.png",
+      "width": 16,
+      "height": 16
+    },
+    {
+      "path": "public/favicon.ico",
+      "width": 32,
+      "height": 32,
+      "note": "PNG-as-ICO"
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png",
+      "width": 1024,
+      "height": 1024
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png",
+      "width": 2732,
+      "height": 2732
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png",
+      "width": 2732,
+      "height": 2732
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png",
+      "width": 2732,
+      "height": 2732
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+      "width": 108,
+      "height": 108
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png",
+      "width": 108,
+      "height": 108
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+      "width": 48,
+      "height": 48
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+      "width": 162,
+      "height": 162
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png",
+      "width": 162,
+      "height": 162
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "width": 72,
+      "height": 72
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+      "width": 72,
+      "height": 72
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+      "width": 216,
+      "height": 216
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png",
+      "width": 216,
+      "height": 216
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+      "width": 96,
+      "height": 96
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+      "width": 96,
+      "height": 96
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+      "width": 324,
+      "height": 324
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png",
+      "width": 324,
+      "height": 324
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+      "width": 144,
+      "height": 144
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+      "width": 144,
+      "height": 144
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+      "width": 432,
+      "height": 432
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png",
+      "width": 432,
+      "height": 432
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+      "width": 192,
+      "height": 192
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+      "width": 192,
+      "height": 192
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-port-mdpi/splash.png",
+      "width": 320,
+      "height": 480
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-port-hdpi/splash.png",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-port-xhdpi/splash.png",
+      "width": 720,
+      "height": 1280
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-port-xxhdpi/splash.png",
+      "width": 960,
+      "height": 1600
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-port-xxxhdpi/splash.png",
+      "width": 1280,
+      "height": 1920
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-land-mdpi/splash.png",
+      "width": 480,
+      "height": 320
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-land-hdpi/splash.png",
+      "width": 800,
+      "height": 480
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-land-xhdpi/splash.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-land-xxhdpi/splash.png",
+      "width": 1600,
+      "height": 960
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable-land-xxxhdpi/splash.png",
+      "width": 1920,
+      "height": 1280
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/android/app/src/main/res/drawable/splash.png",
+      "width": 480,
+      "height": 320
+    },
+    {
+      "path": "/Users/anthonygenosa/Downloads/trackdown-web/public/splash.png",
+      "width": 1284,
+      "height": 2778
+    }
+  ]
+}

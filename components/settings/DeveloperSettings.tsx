@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Monitor, Trash2, FlaskConical, Eye, EyeOff, Sparkles } from "lucide-react";
 import { AppTab } from "@/components/navigation/BottomNav";
 import { Shift, PlayingSession } from "@/lib/types";
@@ -119,6 +120,14 @@ export default function DeveloperSettings({
       title="Developer"
       description="Testing tools for previewing Home states and managing demo records."
     >
+      <div className="flex items-center gap-3 rounded-xl border border-td-border/80 bg-td-surface2/50 px-4 py-3">
+        <Image src="/logo-icon.png" alt="" width={32} height={32} className="h-8 w-8 object-contain" aria-hidden />
+        <div>
+          <p className="text-[13px] font-semibold text-td-cream">Trackdown Developer</p>
+          <p className="text-[11px] text-td-muted">Internal tools · v{APP_VERSION}</p>
+        </div>
+      </div>
+
       <PlayingCard className="space-y-3 p-4 text-[12.5px]">
         <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">App State</p>
         <DiagRow label="Navigation tab" value={currentTab} />
