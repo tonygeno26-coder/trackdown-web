@@ -1,7 +1,7 @@
 "use client";
 
 import { Shift, DownBlock } from "@/lib/types";
-import { fmtMoney } from "@/lib/blocks";
+import { fmtMoney, netTips } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
 
 export default function ShiftPanel({
@@ -18,6 +18,7 @@ export default function ShiftPanel({
   onEndShift: () => void;
 }) {
   const progress = doneCount / shift.blocks.length;
+  const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
 
   return (
     <>
@@ -28,7 +29,8 @@ export default function ShiftPanel({
               <div className="text-sm font-semibold text-td-cream mb-0.5">{shift.title}</div>
             )}
             <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
-              {shift.type === "tournament" ? "Tournament" : "Cash Game"} · {shift.down_length}m downs
+              {shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game"} ·{" "}
+              {shift.down_length}m downs
             </span>
           </div>
           <button
@@ -39,8 +41,13 @@ export default function ShiftPanel({
           </button>
         </div>
         <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
-          {fmtMoney(total)}
+          {fmtMoney(net)}
         </span>
+        {shift.house_tax_pct > 0 && (
+          <span className="text-[11.5px] text-td-muted block">
+            {fmtMoney(total)} gross · {shift.house_tax_pct}% house cut
+          </span>
+        )}
         <span className="text-[12.5px] text-td-muted">
           {doneCount} of {shift.blocks.length} downs logged
         </span>

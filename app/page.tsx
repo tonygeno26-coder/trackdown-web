@@ -38,7 +38,13 @@ export default function Home() {
   const activeShift = useMemo(() => (shifts || []).find((s) => s.status === "active") || null, [shifts]);
   const pastShifts = useMemo(() => (shifts || []).filter((s) => s.status !== "active"), [shifts]);
 
-  const createShift = async (type: ShiftType, downLength: 30 | 40, startTime: string, title: string) => {
+  const createShift = async (
+    type: ShiftType,
+    downLength: 30 | 40,
+    startTime: string,
+    title: string,
+    houseTaxPct: number
+  ) => {
     const { data, error } = await supabase
       .from("shifts")
       .insert({
@@ -46,6 +52,7 @@ export default function Home() {
         down_length: downLength,
         start_time: startTime,
         title,
+        house_tax_pct: houseTaxPct,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
       })

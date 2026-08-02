@@ -1,4 +1,4 @@
-export type ShiftType = "tournament" | "cash";
+export type ShiftType = "tournament" | "cash" | "homegame";
 export type BlockStatus = "pending" | "done" | "skipped";
 
 export interface DownBlock {
@@ -19,6 +19,7 @@ export interface Shift {
   type: ShiftType;
   title: string;
   down_length: 30 | 40;
+  house_tax_pct: number;
   start_time: string; // ISO
   ended_at: string | null;
   status: "active" | "completed";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check, Spade, Coffee, Clock } from "lucide-react";
+import { X, Check, Spade, Coffee, Home, Clock } from "lucide-react";
 import { ShiftType } from "@/lib/types";
 
 function nearestHalfHour(): string {
@@ -20,12 +20,19 @@ export default function NewShiftModal({
   onCreate,
 }: {
   onCancel: () => void;
-  onCreate: (type: ShiftType, downLength: 30 | 40, startTime: string, title: string) => void;
+  onCreate: (
+    type: ShiftType,
+    downLength: 30 | 40,
+    startTime: string,
+    title: string,
+    houseTaxPct: number
+  ) => void;
 }) {
   const [type, setType] = useState<ShiftType | null>(null);
   const [length, setLength] = useState<30 | 40>(30);
   const [startTime, setStartTime] = useState(nearestHalfHour());
   const [title, setTitle] = useState("");
+  const [taxPct, setTaxPct] = useState("");
 
   const buildShiftStartISO = (): string => {
     const [hh, mm] = startTime.split(":").map(Number);
@@ -50,20 +57,27 @@ export default function NewShiftModal({
         {!type ? (
           <>
             <p className="text-[13.5px] text-td-muted -mt-1.5">What are you dealing?</p>
-            <div className="flex gap-2.5">
+            <div className="flex gap-2">
               <button
                 onClick={() => setType("tournament")}
-                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-5 px-2.5 font-semibold text-[13.5px] hover:border-td-gold"
+                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
               >
-                <Spade size={22} />
+                <Spade size={20} />
                 <span>Tournament</span>
               </button>
               <button
                 onClick={() => setType("cash")}
-                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-5 px-2.5 font-semibold text-[13.5px] hover:border-td-gold"
+                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
               >
-                <Coffee size={22} />
+                <Coffee size={20} />
                 <span>Cash Game</span>
+              </button>
+              <button
+                onClick={() => setType("homegame")}
+                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
+              >
+                <Home size={20} />
+                <span>Home Game</span>
               </button>
             </div>
           </>
@@ -86,6 +100,26 @@ export default function NewShiftModal({
                   ))}
                 </div>
               </>
+            )}
+
+            {type === "homegame" && (
+              <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
+                <span>House tax on tips (%)</span>
+                <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="1"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    value={taxPct}
+                    onChange={(e) => setTaxPct(e.target.value)}
+                    className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+                  />
+                  <span className="font-mono text-td-muted">%</span>
+                </div>
+              </label>
             )}
 
             <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
@@ -118,7 +152,15 @@ export default function NewShiftModal({
                 Back
               </button>
               <button
-                onClick={() => onCreate(type, type === "cash" ? 30 : length, buildShiftStartISO(), title)}
+                onClick={() =>
+                  onCreate(
+                    type,
+                    type === "tournament" ? length : 30,
+                    buildShiftStartISO(),
+                    title,
+                    type === "homegame" ? parseFloat(taxPct) || 0 : 0
+                  )
+                }
                 className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
               >
                 <Check size={16} /> Build shift

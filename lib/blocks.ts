@@ -29,6 +29,10 @@ export function buildBlocks(startISO: string, downLength: number): DownBlock[] {
   return blocks;
 }
 
+export function netTips(grossTips: number, taxPct: number): number {
+  return grossTips * (1 - taxPct / 100);
+}
+
 export function isNowWithin(startISO: string, endISO: string): boolean {
   const now = Date.now();
   return now >= new Date(startISO).getTime() && now < new Date(endISO).getTime();
