@@ -8,6 +8,7 @@ import { buildBlocks, extendBlocks } from "@/lib/blocks";
 import { GamingCategory, getGamingCategory } from "@/lib/gaming";
 import { saveHand } from "@/lib/hands/storage";
 import { SavedHandInput } from "@/lib/hands/types";
+import { appendAdditionalBuyIn, replaceShiftBlock, updateShiftBlock } from "@/lib/db-mutations";
 import HandBuilderModal from "@/components/train/my-hands/HandBuilderModal";
 import { createPreviewDealerShift, createPreviewGamingSession } from "@/lib/preview-data";
 import EmptyHomeState from "@/components/home/EmptyHomeState";
@@ -179,10 +180,9 @@ export default function HomeDashboard({
   const saveBlock = async (updatedBlock: DownBlock) => {
     if (!guardMutation() || !blockSheet) return;
     const shift = blockSheet.shift;
-    const nextBlocks = shift.blocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b));
-    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", shift.id);
-    if (err) {
-      setError(err.message);
+    const { blocks: nextBlocks, error: err } = await replaceShiftBlock(shift.id, updatedBlock);
+    if (err || !nextBlocks) {
+      setError(err ?? "Could not save down.");
       return;
     }
     onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, blocks: nextBlocks } : s)));
@@ -191,11 +191,12 @@ export default function HomeDashboard({
 
   const quickBlockUpdate = async (block: DownBlock, update: Partial<DownBlock>) => {
     if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
-    const nextBlock = { ...block, ...update };
-    const nextBlocks = activeShift.blocks.map((b) => (b.id === block.id ? nextBlock : b));
-    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
-    if (err) {
-      setError(err.message);
+    const { blocks: nextBlocks, error: err } = await updateShiftBlock(activeShift.id, block.id, (b) => ({
+      ...b,
+      ...update,
+    }));
+    if (err || !nextBlocks) {
+      setError(err ?? "Could not update down.");
       return;
     }
     onShiftsChange(shifts.map((s) => (s.id === activeShift.id ? { ...s, blocks: nextBlocks } : s)));
@@ -204,8 +205,8 @@ export default function HomeDashboard({
   const endShift = async (
     settledStatus: "yes" | "no" | "partial" | null,
     settledAmount: number | null
-  ) => {
-    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
+  ): Promise<boolean> => {
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return false;
     const endedAt = new Date().toISOString();
     const { error: err } = await supabase
       .from("shifts")
@@ -218,7 +219,7 @@ export default function HomeDashboard({
       .eq("id", activeShift.id);
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
     onShiftsChange(
       shifts.map((s) =>
@@ -228,6 +229,7 @@ export default function HomeDashboard({
       )
     );
     setConfirmEndShift(false);
+    return true;
   };
 
   const extendShift = async (additionalMinutes: number) => {
@@ -260,19 +262,15 @@ export default function HomeDashboard({
   const addBuyIn = async (amount: number) => {
     if (!guardMutation() || !activeSession || activeSession.id.startsWith("preview-")) return;
     setSaving(true);
-    const nextAdditional = (activeSession.additional_buy_ins || 0) + amount;
-    const { error: err } = await supabase
-      .from("playing_sessions")
-      .update({ additional_buy_ins: nextAdditional })
-      .eq("id", activeSession.id);
+    const { additionalBuyIns, error: err } = await appendAdditionalBuyIn(activeSession.id, amount);
     setSaving(false);
-    if (err) {
-      setError(err.message);
+    if (err || additionalBuyIns == null) {
+      setError(err ?? "Could not add buy-in.");
       return;
     }
     onSessionsChange(
       playingSessions.map((s) =>
-        s.id === activeSession.id ? { ...s, additional_buy_ins: nextAdditional } : s
+        s.id === activeSession.id ? { ...s, additional_buy_ins: additionalBuyIns } : s
       )
     );
     setAddBuyInOpen(false);

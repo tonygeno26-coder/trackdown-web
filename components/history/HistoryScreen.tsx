@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { Shift, DownBlock, PlayingSession } from "@/lib/types";
+import { replaceShiftBlock } from "@/lib/db-mutations";
 import DealingHistory from "@/components/history/DealingHistory";
 import GamingHistory from "@/components/history/GamingHistory";
 import BlockSheet from "@/components/BlockSheet";
@@ -50,10 +51,9 @@ export default function HistoryScreen({
   const saveBlock = async (updatedBlock: DownBlock) => {
     if (!blockSheet) return;
     const shift = blockSheet.shift;
-    const nextBlocks = shift.blocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b));
-    const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", shift.id);
-    if (err) {
-      setError(err.message);
+    const { blocks: nextBlocks, error: err } = await replaceShiftBlock(shift.id, updatedBlock);
+    if (err || !nextBlocks) {
+      setError(err ?? "Could not save down.");
       return;
     }
     onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, blocks: nextBlocks } : s)));

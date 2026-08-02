@@ -5,6 +5,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { PlayingSession } from "@/lib/types";
 import { getGamingCategory } from "@/lib/gaming";
+import { appendAdditionalBuyIn } from "@/lib/db-mutations";
 import { saveHand } from "@/lib/hands/storage";
 import { SavedHandInput } from "@/lib/hands/types";
 import NewPlayingSessionModal from "@/components/playing/NewPlayingSessionModal";
@@ -67,19 +68,15 @@ export default function PlayingSection({
   const addBuyIn = async (amount: number) => {
     if (!activeSession) return;
     setSaving(true);
-    const nextAdditional = (activeSession.additional_buy_ins || 0) + amount;
-    const { error: err } = await supabase
-      .from("playing_sessions")
-      .update({ additional_buy_ins: nextAdditional })
-      .eq("id", activeSession.id);
+    const { additionalBuyIns, error: err } = await appendAdditionalBuyIn(activeSession.id, amount);
     setSaving(false);
-    if (err) {
-      setError(err.message);
+    if (err || additionalBuyIns == null) {
+      setError(err ?? "Could not add buy-in.");
       return;
     }
     onSessionsChange(
       sessions.map((s) =>
-        s.id === activeSession.id ? { ...s, additional_buy_ins: nextAdditional } : s
+        s.id === activeSession.id ? { ...s, additional_buy_ins: additionalBuyIns } : s
       )
     );
     setAddBuyInOpen(false);
