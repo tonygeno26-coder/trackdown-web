@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Plus, Spade, X } from "lucide-react";
+import { Plus, Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Shift, DownBlock, ShiftType } from "@/lib/types";
 import { buildBlocks } from "@/lib/blocks";
 import ShiftPanel from "@/components/ShiftPanel";
 import NewShiftModal from "@/components/NewShiftModal";
 import BlockSheet from "@/components/BlockSheet";
+import EndShiftModal from "@/components/EndShiftModal";
 import HistoryList from "@/components/HistoryList";
 
 export default function Home() {
@@ -81,19 +82,31 @@ export default function Home() {
     setBlockSheet(null);
   };
 
-  const endShift = async () => {
+  const endShift = async (
+    settledStatus: "yes" | "no" | "partial" | null,
+    settledAmount: number | null
+  ) => {
     if (!activeShift) return;
     const endedAt = new Date().toISOString();
     const { error } = await supabase
       .from("shifts")
-      .update({ status: "completed", ended_at: endedAt })
+      .update({
+        status: "completed",
+        ended_at: endedAt,
+        settled_status: settledStatus,
+        settled_amount: settledAmount,
+      })
       .eq("id", activeShift.id);
     if (error) {
       setError(error.message);
       return;
     }
     setShifts((prev) =>
-      (prev || []).map((s) => (s.id === activeShift.id ? { ...s, status: "completed", ended_at: endedAt } : s))
+      (prev || []).map((s) =>
+        s.id === activeShift.id
+          ? { ...s, status: "completed", ended_at: endedAt, settled_status: settledStatus, settled_amount: settledAmount }
+          : s
+      )
     );
     setConfirmEndShift(false);
   };
@@ -201,40 +214,13 @@ export default function Home() {
         />
       )}
 
-      {confirmEndShift && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75"
-          onClick={() => setConfirmEndShift(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[460px] bg-td-surface border border-td-border rounded-t-2xl px-5 pt-5 pb-6 flex flex-col gap-3.5"
-          >
-            <div className="flex justify-between items-center">
-              <h2 className="font-display font-bold text-lg tracking-wide">End this shift?</h2>
-              <button onClick={() => setConfirmEndShift(false)} className="text-td-muted p-1 rounded">
-                <X size={18} />
-              </button>
-            </div>
-            <p className="text-[13.5px] text-td-muted -mt-1.5">
-              Unlogged downs will be left blank and the shift moves to History.
-            </p>
-            <div className="flex gap-2.5 mt-1.5">
-              <button
-                onClick={() => setConfirmEndShift(false)}
-                className="flex-1 rounded-[10px] py-3 font-bold text-sm bg-td-surface2 border border-td-border text-td-cream"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={endShift}
-                className="flex-1 rounded-[10px] py-3 font-bold text-sm bg-td-red text-td-cream"
-              >
-                End shift
-              </button>
-            </div>
-          </div>
-        </div>
+      {confirmEndShift && activeShift && (
+        <EndShiftModal
+          shift={activeShift}
+          grossTotal={shiftTotal(activeShift)}
+          onCancel={() => setConfirmEndShift(false)}
+          onConfirm={endShift}
+        />
       )}
     </div>
   );

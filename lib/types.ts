@@ -22,6 +22,8 @@ export interface Shift {
   house_tax_pct: number;
   start_time: string; // ISO
   ended_at: string | null;
+  settled_status: "yes" | "no" | "partial" | null;
+  settled_amount: number | null;
   status: "active" | "completed";
   blocks: DownBlock[];
   created_at: string;

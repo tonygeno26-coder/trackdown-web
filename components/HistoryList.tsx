@@ -47,6 +47,15 @@ export default function HistoryList({
                 <span className="text-[11.5px] text-td-muted">
                   {fmtTime(shift.start_time)} · {shift.down_length}m downs · {done}/{shift.blocks.length} logged
                 </span>
+                {shift.type === "homegame" && shift.settled_status && (
+                  <span className={`text-[11px] font-semibold mt-0.5 ${
+                    shift.settled_status === "yes" ? "text-td-gold" : shift.settled_status === "no" ? "text-red-300" : "text-td-muted"
+                  }`}>
+                    {shift.settled_status === "yes" && "Settled in full"}
+                    {shift.settled_status === "no" && "Not settled"}
+                    {shift.settled_status === "partial" && `Partially settled · ${fmtMoney(shift.settled_amount || 0)} paid`}
+                  </span>
+                )}
               </div>
               <span className="font-mono font-semibold text-td-goldsoft text-[15px]">
                 {shift.type === "tournament" ? `${done} downs` : fmtMoney(total)}
