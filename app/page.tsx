@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Plus, Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Shift, DownBlock, ShiftType } from "@/lib/types";
-import { buildBlocks } from "@/lib/blocks";
+import { buildBlocks, extendBlocks } from "@/lib/blocks";
 import ShiftPanel from "@/components/ShiftPanel";
 import NewShiftModal from "@/components/NewShiftModal";
 import BlockSheet from "@/components/BlockSheet";
@@ -111,6 +111,17 @@ export default function Home() {
     setConfirmEndShift(false);
   };
 
+  const extendShift = async (additionalMinutes: number) => {
+    if (!activeShift) return;
+    const nextBlocks = extendBlocks(activeShift.blocks, activeShift.down_length, additionalMinutes);
+    const { error } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setShifts((prev) => (prev || []).map((s) => (s.id === activeShift.id ? { ...s, blocks: nextBlocks } : s)));
+  };
+
   const deleteShift = async (id: string) => {
     const { error } = await supabase.from("shifts").delete().eq("id", id);
     if (error) {
@@ -191,6 +202,7 @@ export default function Home() {
               doneCount={shiftDoneCount(activeShift)}
               onBlockTap={(b) => setBlockSheet({ shift: activeShift, block: b })}
               onEndShift={() => setConfirmEndShift(true)}
+              onExtend={extendShift}
             />
           ))}
 

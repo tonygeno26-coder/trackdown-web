@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
 import { fmtMoney, netTips } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
@@ -10,13 +12,16 @@ export default function ShiftPanel({
   doneCount,
   onBlockTap,
   onEndShift,
+  onExtend,
 }: {
   shift: Shift;
   total: number;
   doneCount: number;
   onBlockTap: (b: DownBlock) => void;
   onEndShift: () => void;
+  onExtend: (additionalMinutes: number) => void;
 }) {
+  const [extendOpen, setExtendOpen] = useState(false);
   const progress = doneCount / shift.blocks.length;
   const isTournament = shift.type === "tournament";
   const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
@@ -77,6 +82,41 @@ export default function ShiftPanel({
         {shift.blocks.map((b) => (
           <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(b)} live />
         ))}
+      </div>
+
+      <div className="mt-3">
+        {!extendOpen ? (
+          <button
+            onClick={() => setExtendOpen(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-[11px] border border-dashed border-td-border text-td-muted text-sm font-semibold py-3 hover:border-td-gold hover:text-td-goldsoft"
+          >
+            <Plus size={15} /> Add more time
+          </button>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <span className="text-[12px] text-td-muted text-center">Add how much more time?</span>
+            <div className="flex gap-2">
+              {[60, 120, 240].map((mins) => (
+                <button
+                  key={mins}
+                  onClick={() => {
+                    onExtend(mins);
+                    setExtendOpen(false);
+                  }}
+                  className="flex-1 rounded-[10px] py-2.5 font-semibold text-[13px] bg-td-surface2 border border-td-border text-td-cream hover:border-td-gold"
+                >
+                  {mins < 120 ? `${mins}m` : `${mins / 60}h`}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setExtendOpen(false)}
+              className="text-[12px] text-td-muted text-center py-1"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
     </>
   );

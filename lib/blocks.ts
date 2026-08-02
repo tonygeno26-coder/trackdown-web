@@ -29,6 +29,31 @@ export function buildBlocks(startISO: string, downLength: number): DownBlock[] {
   return blocks;
 }
 
+export function extendBlocks(existingBlocks: DownBlock[], downLength: number, additionalMinutes: number): DownBlock[] {
+  const count = Math.round(additionalMinutes / downLength);
+  const lastBlock = existingBlocks[existingBlocks.length - 1];
+  const start = new Date(lastBlock.scheduledEnd);
+  const startIndex = lastBlock.index + 1;
+  const newBlocks: DownBlock[] = [];
+  for (let i = 0; i < count; i++) {
+    const s = new Date(start.getTime() + i * downLength * 60000);
+    const e = new Date(start.getTime() + (i + 1) * downLength * 60000);
+    newBlocks.push({
+      id: uid(),
+      index: startIndex + i,
+      scheduledStart: s.toISOString(),
+      scheduledEnd: e.toISOString(),
+      status: "pending",
+      tournament: "",
+      table: "",
+      game: "",
+      tips: 0,
+      notes: "",
+    });
+  }
+  return [...existingBlocks, ...newBlocks];
+}
+
 export function netTips(grossTips: number, taxPct: number): number {
   return grossTips * (1 - taxPct / 100);
 }
