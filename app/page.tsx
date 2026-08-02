@@ -46,7 +46,8 @@ export default function Home() {
     downLength: 30 | 40,
     startTime: string,
     title: string,
-    houseTaxPct: number
+    houseTaxPct: number,
+    hourlyRate: number | null
   ) => {
     const { data, error } = await supabase
       .from("shifts")
@@ -56,6 +57,7 @@ export default function Home() {
         start_time: startTime,
         title,
         house_tax_pct: houseTaxPct,
+        hourly_rate: hourlyRate,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
       })

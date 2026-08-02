@@ -54,6 +54,18 @@ export function extendBlocks(existingBlocks: DownBlock[], downLength: number, ad
   return [...existingBlocks, ...newBlocks];
 }
 
+export function scheduledHoursFromBlocks(blocks: DownBlock[]): number {
+  if (blocks.length === 0) return 0;
+  const start = new Date(blocks[0].scheduledStart).getTime();
+  const end = new Date(blocks[blocks.length - 1].scheduledEnd).getTime();
+  return (end - start) / (1000 * 60 * 60);
+}
+
+export function estimatedTournamentEarnings(blocks: DownBlock[], hourlyRate: number | null): number | null {
+  if (hourlyRate == null) return null;
+  return hourlyRate * scheduledHoursFromBlocks(blocks);
+}
+
 export function netTips(grossTips: number, taxPct: number): number {
   return grossTips * (1 - taxPct / 100);
 }
@@ -66,6 +78,15 @@ export function isNowWithin(startISO: string, endISO: string): boolean {
 export function fmtMoney(n: number): string {
   const v = Number(n) || 0;
   return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
+export function fmtMoneyPrecise(n: number): string {
+  const v = Number(n) || 0;
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function fmtHourlyRate(n: number): string {
+  return `${fmtMoneyPrecise(n)}/hr`;
 }
 
 export function fmtTime(iso: string): string {

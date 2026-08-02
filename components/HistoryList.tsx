@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
-import { fmtMoney, fmtDateHeader, fmtTime } from "@/lib/blocks";
+import { fmtMoney, fmtDateHeader, fmtTime, fmtHourlyRate, fmtMoneyPrecise, estimatedTournamentEarnings } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
 
 type TypeFilter = "all" | "tournament" | "cash" | "homegame";
@@ -93,6 +93,8 @@ export default function HistoryList({
           : shift.blocks.reduce((s, b) => s + (b.status === "done" ? b.tips : 0), 0);
         const done = shift.blocks.filter((b) => b.status === "done").length;
         const doneBlocks = shift.blocks.filter((b) => b.status === "done");
+        const tournamentEarnings =
+          shift.type === "tournament" ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
 
         return (
           <div key={shift.id} className="border-b border-td-border pb-1 last:border-none">
@@ -109,8 +111,18 @@ export default function HistoryList({
                 </span>
                 <span className="text-[11.5px] text-td-muted">
                   {fmtTime(shift.start_time)} · {shift.down_length}m downs ·{" "}
-                  {shift.is_lump_sum ? "logged as one total" : `${done}/${shift.blocks.length} logged`}
+                  {shift.type === "tournament"
+                    ? `${done} downs logged`
+                    : shift.is_lump_sum
+                    ? "logged as one total"
+                    : `${done}/${shift.blocks.length} logged`}
                 </span>
+                {shift.type === "tournament" && shift.hourly_rate != null && tournamentEarnings != null && (
+                  <span className="text-[11px] font-semibold mt-0.5 text-td-muted">
+                    {fmtHourlyRate(shift.hourly_rate)} · est.{" "}
+                    <span className="text-td-goldsoft">{fmtMoneyPrecise(tournamentEarnings)}</span>
+                  </span>
+                )}
                 {shift.type === "homegame" && shift.settled_status && (
                   <span
                     className={`text-[11px] font-semibold mt-0.5 ${

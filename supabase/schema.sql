@@ -29,3 +29,15 @@ create policy "Allow all for anon"
   for all
   using (true)
   with check (true);
+
+-- Incremental migrations (run via execute_sql)
+alter table shifts add column if not exists title text not null default '';
+alter table shifts add column if not exists house_tax_pct numeric not null default 0;
+alter table shifts add column if not exists is_lump_sum boolean not null default false;
+alter table shifts add column if not exists lump_sum_tips numeric;
+alter table shifts add column if not exists settled_status text;
+alter table shifts add column if not exists settled_amount numeric;
+alter table shifts add column if not exists hourly_rate numeric;
+
+alter table shifts drop constraint if exists shifts_type_check;
+alter table shifts add constraint shifts_type_check check (type in ('tournament', 'cash', 'homegame'));

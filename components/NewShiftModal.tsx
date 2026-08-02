@@ -4,6 +4,8 @@ import { useState } from "react";
 import { X, Check, Spade, Coffee, Home, Clock } from "lucide-react";
 import { ShiftType } from "@/lib/types";
 
+const LAST_TOURNAMENT_RATE_KEY = "trackdown_last_tournament_hourly_rate";
+
 function nearestHalfHour(): string {
   const d = new Date();
   const minutes = d.getMinutes();
@@ -13,6 +15,11 @@ function nearestHalfHour(): string {
   const hh = String(d.getHours()).padStart(2, "0");
   const mm = String(d.getMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function readLastHourlyRate(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(LAST_TOURNAMENT_RATE_KEY) || "";
 }
 
 export default function NewShiftModal({
@@ -25,7 +32,8 @@ export default function NewShiftModal({
     downLength: 30 | 40,
     startTime: string,
     title: string,
-    houseTaxPct: number
+    houseTaxPct: number,
+    hourlyRate: number | null
   ) => void;
 }) {
   const [type, setType] = useState<ShiftType | null>(null);
@@ -33,12 +41,38 @@ export default function NewShiftModal({
   const [startTime, setStartTime] = useState(nearestHalfHour());
   const [title, setTitle] = useState("");
   const [taxPct, setTaxPct] = useState("");
+  const [hourlyRate, setHourlyRate] = useState("");
 
   const buildShiftStartISO = (): string => {
     const [hh, mm] = startTime.split(":").map(Number);
     const d = new Date();
     d.setHours(hh, mm, 0, 0);
     return d.toISOString();
+  };
+
+  const selectType = (next: ShiftType) => {
+    setType(next);
+    if (next === "tournament") setHourlyRate(readLastHourlyRate());
+  };
+
+  const handleCreate = () => {
+    if (!type) return;
+    let rate: number | null = null;
+    if (type === "tournament" && hourlyRate.trim()) {
+      const parsed = parseFloat(hourlyRate);
+      if (!isNaN(parsed)) {
+        rate = parsed;
+        localStorage.setItem(LAST_TOURNAMENT_RATE_KEY, String(parsed));
+      }
+    }
+    onCreate(
+      type,
+      type === "tournament" ? length : 30,
+      buildShiftStartISO(),
+      title,
+      type === "homegame" ? parseFloat(taxPct) || 0 : 0,
+      rate
+    );
   };
 
   return (
@@ -59,21 +93,21 @@ export default function NewShiftModal({
             <p className="text-[13.5px] text-td-muted -mt-1.5">What are you dealing?</p>
             <div className="flex gap-2">
               <button
-                onClick={() => setType("tournament")}
+                onClick={() => selectType("tournament")}
                 className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
               >
                 <Spade size={20} />
                 <span>Tournament</span>
               </button>
               <button
-                onClick={() => setType("cash")}
+                onClick={() => selectType("cash")}
                 className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
               >
                 <Coffee size={20} />
                 <span>Cash Game</span>
               </button>
               <button
-                onClick={() => setType("homegame")}
+                onClick={() => selectType("homegame")}
                 className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
               >
                 <Home size={20} />
@@ -99,6 +133,23 @@ export default function NewShiftModal({
                     </button>
                   ))}
                 </div>
+
+                <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
+                  <span>Hourly rate ($/hour)</span>
+                  <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+                    <span className="font-mono text-td-muted">$</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      placeholder="Leave blank if unknown"
+                      value={hourlyRate}
+                      onChange={(e) => setHourlyRate(e.target.value)}
+                      className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+                    />
+                  </div>
+                </label>
               </>
             )}
 
@@ -152,15 +203,7 @@ export default function NewShiftModal({
                 Back
               </button>
               <button
-                onClick={() =>
-                  onCreate(
-                    type,
-                    type === "tournament" ? length : 30,
-                    buildShiftStartISO(),
-                    title,
-                    type === "homegame" ? parseFloat(taxPct) || 0 : 0
-                  )
-                }
+                onClick={handleCreate}
                 className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
               >
                 <Check size={16} /> Build shift

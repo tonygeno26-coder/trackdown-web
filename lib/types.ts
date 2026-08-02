@@ -22,6 +22,7 @@ export interface Shift {
   house_tax_pct: number;
   is_lump_sum: boolean;
   lump_sum_tips: number | null;
+  hourly_rate: number | null;
   start_time: string; // ISO
   ended_at: string | null;
   settled_status: "yes" | "no" | "partial" | null;

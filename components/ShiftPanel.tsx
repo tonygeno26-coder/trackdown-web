@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, PenLine } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
-import { fmtMoney, netTips } from "@/lib/blocks";
+import { fmtMoney, netTips, fmtHourlyRate, fmtMoneyPrecise, estimatedTournamentEarnings } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
 
 export default function ShiftPanel({
@@ -29,6 +29,7 @@ export default function ShiftPanel({
   const [extendOpen, setExtendOpen] = useState(false);
   const typeLabel =
     shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game";
+  const estimatedEarnings = isTournament ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
 
   return (
     <>
@@ -53,6 +54,20 @@ export default function ShiftPanel({
               {doneCount}
             </span>
             <span className="text-[12.5px] text-td-muted">of {shift.blocks.length} downs logged</span>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-[11px] text-td-muted uppercase tracking-wide block mb-0.5">Hourly Rate</span>
+                <span className="text-sm font-mono font-semibold text-td-cream">
+                  {shift.hourly_rate != null ? fmtHourlyRate(shift.hourly_rate) : "Not Set"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[11px] text-td-muted uppercase tracking-wide block mb-0.5">Estimated Earnings</span>
+                <span className="text-sm font-mono font-semibold text-td-goldsoft">
+                  {estimatedEarnings != null ? fmtMoneyPrecise(estimatedEarnings) : "—"}
+                </span>
+              </div>
+            </div>
           </>
         ) : (
           <>
