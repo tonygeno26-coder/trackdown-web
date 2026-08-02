@@ -36,7 +36,7 @@ export default function TrainingProgress({ onBack }: { onBack: () => void }) {
         <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Dealer</p>
         <TrainStatsRow
           label="Lessons completed"
-          value={`${progress.dealer.completedTipIds.length} / ${DEALER_TIPS.length}`}
+          value={`${progress.dealer.tips.completedIds.length} / ${DEALER_TIPS.length}`}
         />
         <TrainStatsRow
           label="Pot calculation accuracy"

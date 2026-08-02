@@ -3,10 +3,17 @@
 import { useState } from "react";
 import TrainLanding from "@/components/train/TrainLanding";
 import TrainingProgress from "@/components/train/TrainingProgress";
-import DealerTrainingHome from "@/components/train/dealer/DealerTrainingHome";
+import DealerAcademyHome from "@/components/train/dealer/DealerAcademyHome";
+import DealerProgressDashboard from "@/components/train/dealer/DealerProgressDashboard";
 import DealingTips from "@/components/train/dealer/DealingTips";
 import PotCalculationTrainer from "@/components/train/dealer/PotCalculationTrainer";
 import PloPotTrainer from "@/components/train/dealer/PloPotTrainer";
+import SidePotTrainer from "@/components/train/dealer/SidePotTrainer";
+import ProcedureScenarioTrainer from "@/components/train/dealer/ProcedureScenarioTrainer";
+import ProcedureQuizTrainer from "@/components/train/dealer/ProcedureQuizTrainer";
+import BoardReadingTrainer from "@/components/train/dealer/BoardReadingTrainer";
+import HiLoTrainer from "@/components/train/dealer/HiLoTrainer";
+import SpeedDrillTrainer from "@/components/train/dealer/SpeedDrillTrainer";
 import PokerTrainingHome from "@/components/train/gaming/PokerTrainingHome";
 import PokerDecisionSimulator from "@/components/train/gaming/PokerDecisionSimulator";
 import PotOddsTrainer from "@/components/train/gaming/PotOddsTrainer";
@@ -23,14 +30,23 @@ import { SavedHand } from "@/lib/hands/types";
 import { AdaptiveTopic, BlackjackTopic, PokerTopic, TrainerRoute } from "@/lib/training/adaptive-types";
 import { BLACKJACK_TOPICS, POKER_TOPICS } from "@/lib/training/adaptive-topics";
 import { BlackjackTrainingMode } from "@/lib/training/blackjack";
+import { DealerModuleKey } from "@/lib/training/dealer-types";
 
 type TrainView =
   | "landing"
   | "progress"
   | "dealer-home"
+  | "dealer-dashboard"
   | "dealing-tips"
   | "pot-calc"
   | "plo-calc"
+  | "side-pot"
+  | "misdeal"
+  | "tournament-quiz"
+  | "cash-quiz"
+  | "board-reading"
+  | "hi-lo"
+  | "speed-drill"
   | "poker-home"
   | "poker-simulator"
   | "pot-odds"
@@ -63,6 +79,22 @@ export default function TrainScreen() {
     });
   };
 
+  const navigateDealerModule = (key: DealerModuleKey) => {
+    const map: Record<DealerModuleKey, TrainView> = {
+      tips: "dealing-tips",
+      pot: "pot-calc",
+      plo: "plo-calc",
+      "side-pot": "side-pot",
+      misdeal: "misdeal",
+      "tournament-quiz": "tournament-quiz",
+      "cash-quiz": "cash-quiz",
+      "board-reading": "board-reading",
+      "hi-lo": "hi-lo",
+      speed: "speed-drill",
+    };
+    navigate(map[key]);
+  };
+
   const navigateAdaptive = (route: TrainerRoute) => {
     if (route.type !== "dealer-home" && route.type !== "poker-home" && route.type !== "blackjack-home") {
       setAdaptiveTopic(route.topic);
@@ -73,6 +105,27 @@ export default function TrainScreen() {
         break;
       case "plo-calc":
         navigate("plo-calc");
+        break;
+      case "side-pot":
+        navigate("side-pot");
+        break;
+      case "misdeal":
+        navigate("misdeal");
+        break;
+      case "tournament-quiz":
+        navigate("tournament-quiz");
+        break;
+      case "cash-quiz":
+        navigate("cash-quiz");
+        break;
+      case "board-reading":
+        navigate("board-reading");
+        break;
+      case "hi-lo":
+        navigate("hi-lo");
+        break;
+      case "speed-drill":
+        navigate("speed-drill");
         break;
       case "poker-simulator":
         navigate("poker-simulator");
@@ -117,21 +170,34 @@ export default function TrainScreen() {
       return <TrainingProgress onBack={goBack} />;
     case "dealer-home":
       return (
-        <DealerTrainingHome
+        <DealerAcademyHome
           onBack={goBack}
-          onModule={(key) => {
-            if (key === "tips") navigate("dealing-tips");
-            else if (key === "pot") navigate("pot-calc");
-            else if (key === "plo") navigate("plo-calc");
-          }}
+          onModule={navigateDealerModule}
+          onDashboard={() => navigate("dealer-dashboard")}
         />
       );
+    case "dealer-dashboard":
+      return <DealerProgressDashboard onBack={goBack} />;
     case "dealing-tips":
       return <DealingTips onBack={goBack} />;
     case "pot-calc":
       return <PotCalculationTrainer onBack={goBack} focusTopic={adaptiveTopic ?? "pot_calculations"} />;
     case "plo-calc":
       return <PloPotTrainer onBack={goBack} focusTopic={adaptiveTopic ?? "plo_pot_calculations"} />;
+    case "side-pot":
+      return <SidePotTrainer onBack={goBack} />;
+    case "misdeal":
+      return <ProcedureScenarioTrainer onBack={goBack} />;
+    case "tournament-quiz":
+      return <ProcedureQuizTrainer onBack={goBack} quizType="tournament" />;
+    case "cash-quiz":
+      return <ProcedureQuizTrainer onBack={goBack} quizType="cash" />;
+    case "board-reading":
+      return <BoardReadingTrainer onBack={goBack} />;
+    case "hi-lo":
+      return <HiLoTrainer onBack={goBack} />;
+    case "speed-drill":
+      return <SpeedDrillTrainer onBack={goBack} />;
     case "poker-home":
       return (
         <PokerTrainingHome

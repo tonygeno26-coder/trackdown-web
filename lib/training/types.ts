@@ -1,3 +1,5 @@
+import type { DealerSkillProgress } from "./dealer-types";
+
 export type DealerTipCategory =
   | "pitching"
   | "pace"
@@ -120,12 +122,8 @@ export interface ScenarioStats extends ModuleStats {
 }
 
 export interface TrainingProgress {
-  version: 2;
-  dealer: {
-    completedTipIds: string[];
-    potCalc: ModuleStats;
-    ploCalc: ModuleStats;
-  };
+  version: 3;
+  dealer: DealerSkillProgress;
   poker: {
     scenarios: ScenarioStats;
     potOdds: ModuleStats;

@@ -67,6 +67,13 @@ export interface FocusRecommendation {
 export type TrainerRoute =
   | { type: "pot-calc"; topic: DealerTopic }
   | { type: "plo-calc"; topic: DealerTopic }
+  | { type: "side-pot"; topic: DealerTopic }
+  | { type: "misdeal"; topic: DealerTopic }
+  | { type: "tournament-quiz"; topic: DealerTopic }
+  | { type: "cash-quiz"; topic: DealerTopic }
+  | { type: "board-reading"; topic: DealerTopic }
+  | { type: "hi-lo"; topic: DealerTopic }
+  | { type: "speed-drill"; topic: DealerTopic }
   | { type: "poker-simulator"; topic: PokerTopic }
   | { type: "pot-odds"; topic: PokerTopic }
   | { type: "blackjack-trainer"; topic: BlackjackTopic }

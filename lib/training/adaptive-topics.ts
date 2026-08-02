@@ -77,6 +77,14 @@ export function trainerRouteForTopic(topic: AdaptiveTopic): TrainerRoute {
       return { type: "pot-calc", topic };
     case "plo_pot_calculations":
       return { type: "plo-calc", topic };
+    case "side_pots":
+      return { type: "side-pot", topic };
+    case "procedures":
+      return { type: "misdeal", topic };
+    case "board_reading":
+      return { type: "board-reading", topic };
+    case "speed_drills":
+      return { type: "speed-drill", topic };
     case "bet_sizing":
       return { type: "pot-odds", topic };
     case "preflop":
@@ -93,11 +101,6 @@ export function trainerRouteForTopic(topic: AdaptiveTopic): TrainerRoute {
     case "double_decisions":
     case "surrender":
       return { type: "blackjack-trainer", topic };
-    case "side_pots":
-    case "procedures":
-    case "board_reading":
-    case "speed_drills":
-      return { type: "dealer-home" };
     default:
       return { type: "dealer-home" };
   }
@@ -105,7 +108,14 @@ export function trainerRouteForTopic(topic: AdaptiveTopic): TrainerRoute {
 
 /** Topics with live trainers for Today's Focus selection */
 export const FOCUS_TRAINABLE: Record<TrainingArea, AdaptiveTopic[]> = {
-  dealer: ["pot_calculations", "plo_pot_calculations"],
+  dealer: [
+    "pot_calculations",
+    "plo_pot_calculations",
+    "side_pots",
+    "procedures",
+    "board_reading",
+    "speed_drills",
+  ],
   poker: [
     "preflop",
     "flop",
