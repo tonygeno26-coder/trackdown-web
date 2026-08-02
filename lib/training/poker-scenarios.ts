@@ -96,6 +96,7 @@ export const POKER_SCENARIOS: PokerScenario[] = [
     potSize: 22,
     actionHistory: "BTN opens, hero calls BB. BTN c-bets $15.",
     availableActions: ["fold", "call", "raise"],
+    actionLabels: { call: "Call $15", raise: "Raise" },
     recommended: [
       { action: "fold", frequency: 10 },
       { action: "call", frequency: 55 },
@@ -236,6 +237,7 @@ export const POKER_SCENARIOS: PokerScenario[] = [
     potSize: 55,
     actionHistory: "Check-call flop and turn. River blank. Villain bets $40 into $55.",
     availableActions: ["fold", "call", "raise"],
+    actionLabels: { call: "Call $40", raise: "Raise to $120" },
     recommended: [
       { action: "fold", frequency: 30 },
       { action: "call", frequency: 55 },
@@ -510,6 +512,7 @@ export const POKER_SCENARIOS: PokerScenario[] = [
     potSize: 35,
     actionHistory: "Hero called BTN vs MP open. Check-call flop. Turn MP bets $20, hero?",
     availableActions: ["fold", "call", "raise"],
+    actionLabels: { call: "Call $20", raise: "Raise to $75" },
     recommended: [
       { action: "fold", frequency: 5 },
       { action: "call", frequency: 25 },

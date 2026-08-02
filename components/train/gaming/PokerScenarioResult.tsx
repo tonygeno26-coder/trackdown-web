@@ -11,6 +11,10 @@ const ACTION_LABELS: Record<PokerAction, string> = {
   raise: "Raise",
 };
 
+function actionLabel(scenario: PokerScenario, action: PokerAction): string {
+  return scenario.actionLabels?.[action] ?? ACTION_LABELS[action];
+}
+
 export default function PokerScenarioResult({
   scenario,
   chosen,
@@ -22,6 +26,8 @@ export default function PokerScenarioResult({
   preferred: boolean;
   acceptable: boolean;
 }) {
+  const preferredRec = scenario.recommended.find((r) => r.action === scenario.preferredAction);
+
   return (
     <TrainFeedback
       correct={preferred}
@@ -34,8 +40,11 @@ export default function PokerScenarioResult({
       }
     >
       <p>
-        You chose <span className="font-bold">{ACTION_LABELS[chosen]}</span>. Preferred:{" "}
-        <span className="font-bold text-td-goldsoft">{ACTION_LABELS[scenario.preferredAction]}</span>.
+        You chose <span className="font-bold">{actionLabel(scenario, chosen)}</span>. Preferred:{" "}
+        <span className="font-bold text-td-goldsoft">
+          {actionLabel(scenario, scenario.preferredAction)}
+        </span>
+        {preferredRec ? ` — ${preferredRec.frequency}%` : ""}.
       </p>
 
       <div className="mt-3">
@@ -43,20 +52,28 @@ export default function PokerScenarioResult({
           Solver-style frequencies
         </p>
         <div className="mt-2 space-y-1.5">
-          {scenario.recommended.map(({ action, frequency }) => (
-            <div key={action} className="flex items-center gap-2">
-              <span className="w-14 text-[12px] font-semibold">{ACTION_LABELS[action]}</span>
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-td-surface2">
-                <div
-                  className={`h-full rounded-full ${
-                    action === scenario.preferredAction ? "bg-td-goldsoft" : "bg-td-muted/50"
-                  }`}
-                  style={{ width: `${frequency}%` }}
-                />
+          {[...scenario.recommended]
+            .sort((a, b) => b.frequency - a.frequency)
+            .map(({ action, frequency }) => (
+              <div key={action} className="flex items-center gap-2">
+                <span
+                  className={`min-w-[5.5rem] text-[12px] font-semibold ${
+                    action === chosen ? "text-td-cream" : "text-td-muted"
+                  } ${action === scenario.preferredAction ? "text-td-goldsoft" : ""}`}
+                >
+                  {actionLabel(scenario, action)}
+                </span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-td-surface2">
+                  <div
+                    className={`h-full rounded-full ${
+                      action === scenario.preferredAction ? "bg-td-goldsoft" : "bg-td-muted/50"
+                    } ${action === chosen ? "ring-1 ring-td-cream/30" : ""}`}
+                    style={{ width: `${frequency}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right font-mono text-[11px]">{frequency}%</span>
               </div>
-              <span className="w-10 text-right font-mono text-[11px]">{frequency}%</span>
-            </div>
-          ))}
+            ))}
         </div>
       </div>
 

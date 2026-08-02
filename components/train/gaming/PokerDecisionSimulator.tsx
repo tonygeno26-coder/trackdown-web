@@ -11,7 +11,7 @@ import {
   scenarioAcceptableAccuracy,
 } from "@/lib/training/progress";
 import { PokerAction, PokerScenario } from "@/lib/training/types";
-import PokerScenarioCard from "@/components/train/gaming/PokerScenarioCard";
+import PokerTable from "@/components/train/gaming/PokerTable";
 import PokerScenarioResult from "@/components/train/gaming/PokerScenarioResult";
 import {
   PrimaryPlayingButton,
@@ -27,6 +27,10 @@ const ACTION_LABELS: Record<PokerAction, string> = {
   bet: "Bet",
   raise: "Raise",
 };
+
+function actionButtonLabel(scenario: PokerScenario, action: PokerAction): string {
+  return scenario.actionLabels?.[action] ?? ACTION_LABELS[action];
+}
 
 export default function PokerDecisionSimulator({ onBack }: { onBack: () => void }) {
   const [scenario, setScenario] = useState<PokerScenario>(() => getRandomScenario());
@@ -59,7 +63,7 @@ export default function PokerDecisionSimulator({ onBack }: { onBack: () => void 
   return (
     <div className="pb-28">
       <TrainHeader
-        title="Decision Simulator"
+        title="Decision Trainer"
         subtitle="Solver-style training scenarios — not a computed Nash equilibrium."
         onBack={onBack}
       />
@@ -71,7 +75,7 @@ export default function PokerDecisionSimulator({ onBack }: { onBack: () => void 
         <TrainStatsRow label="Completed" value={String(stats.attempted)} />
       </div>
 
-      <PokerScenarioCard scenario={scenario} />
+      <PokerTable scenario={scenario} highlightHero={submitted} />
 
       {!submitted ? (
         <div className="mt-4 grid grid-cols-2 gap-2">
@@ -82,7 +86,7 @@ export default function PokerDecisionSimulator({ onBack }: { onBack: () => void 
               onClick={() => submit(action)}
               className="rounded-xl border border-td-border bg-td-surface2 py-4 text-[14px] font-bold uppercase tracking-wide text-td-cream hover:border-td-gold/40"
             >
-              {ACTION_LABELS[action]}
+              {actionButtonLabel(scenario, action)}
             </button>
           ))}
         </div>

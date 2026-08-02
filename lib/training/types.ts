@@ -81,6 +81,8 @@ export interface PokerScenario {
   potSize: number;
   actionHistory: string;
   availableActions: PokerAction[];
+  /** Optional display labels e.g. "Call $75", "Raise to $300" */
+  actionLabels?: Partial<Record<PokerAction, string>>;
   recommended: RecommendedAction[];
   preferredAction: PokerAction;
   explanation: string;
@@ -118,7 +120,7 @@ export interface ScenarioStats extends ModuleStats {
 }
 
 export interface TrainingProgress {
-  version: 1;
+  version: 2;
   dealer: {
     completedTipIds: string[];
     potCalc: ModuleStats;
@@ -128,6 +130,20 @@ export interface TrainingProgress {
     scenarios: ScenarioStats;
     potOdds: ModuleStats;
   };
+  blackjack: BlackjackStats;
+}
+
+export interface BlackjackStats {
+  total: ModuleStats;
+  hard: ModuleStats;
+  soft: ModuleStats;
+  pair: ModuleStats;
+  surrender: ModuleStats;
+  mistakeQueue: string[];
+  totalResponseMs: number;
+  responseCount: number;
+  speedBestStreak: number;
+  speedCurrentStreak: number;
 }
 
 export const ACCEPTABLE_ACTION_THRESHOLD = 10;
