@@ -6,15 +6,15 @@ const config: Config = {
     extend: {
       colors: {
         td: {
-          bg: "#0d1712",
-          surface: "#141f1a",
-          surface2: "#1a2b23",
-          gold: "#c9a227",
-          goldsoft: "#e6c65a",
-          red: "#a24141",
-          cream: "#f0ece1",
-          muted: "#7c9187",
-          border: "#223229",
+          bg: "#0a0a0c",
+          surface: "#17181c",
+          surface2: "#202227",
+          gold: "#c8202f",
+          goldsoft: "#2ecc71",
+          red: "#8a1620",
+          cream: "#eceef0",
+          muted: "#84909c",
+          border: "#26282f",
         },
       },
       fontFamily: {
