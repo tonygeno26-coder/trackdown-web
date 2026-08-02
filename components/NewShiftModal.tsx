@@ -4,15 +4,34 @@ import { useState } from "react";
 import { X, Check, Spade, Coffee, Clock } from "lucide-react";
 import { ShiftType } from "@/lib/types";
 
+function nearestHalfHour(): string {
+  const d = new Date();
+  const minutes = d.getMinutes();
+  const rounded = minutes < 30 ? 30 : 0;
+  if (rounded === 0) d.setHours(d.getHours() + 1);
+  d.setMinutes(rounded, 0, 0);
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 export default function NewShiftModal({
   onCancel,
   onCreate,
 }: {
   onCancel: () => void;
-  onCreate: (type: ShiftType, downLength: 30 | 40) => void;
+  onCreate: (type: ShiftType, downLength: 30 | 40, startTime: string) => void;
 }) {
   const [type, setType] = useState<ShiftType | null>(null);
   const [length, setLength] = useState<30 | 40>(30);
+  const [startTime, setStartTime] = useState(nearestHalfHour());
+
+  const buildShiftStartISO = (): string => {
+    const [hh, mm] = startTime.split(":").map(Number);
+    const d = new Date();
+    d.setHours(hh, mm, 0, 0);
+    return d.toISOString();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
@@ -39,7 +58,7 @@ export default function NewShiftModal({
                 <span>Tournament</span>
               </button>
               <button
-                onClick={() => onCreate("cash", 30)}
+                onClick={() => setType("cash")}
                 className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-5 px-2.5 font-semibold text-[13.5px] hover:border-td-gold"
               >
                 <Coffee size={22} />
@@ -49,20 +68,36 @@ export default function NewShiftModal({
           </>
         ) : (
           <>
-            <p className="text-[13.5px] text-td-muted -mt-1.5">Down length?</p>
-            <div className="flex gap-2.5">
-              {[30, 40].map((len) => (
-                <button
-                  key={len}
-                  onClick={() => setLength(len as 30 | 40)}
-                  className={`flex-1 flex flex-col items-center gap-2 border-[1.5px] rounded-xl py-5 px-2.5 font-semibold text-[13.5px]
-                    ${length === len ? "border-td-gold bg-td-gold/10 text-td-goldsoft" : "border-td-border bg-td-surface2 hover:border-td-gold"}`}
-                >
-                  <Clock size={20} />
-                  <span>{len} min</span>
-                </button>
-              ))}
-            </div>
+            {type === "tournament" && (
+              <>
+                <p className="text-[13.5px] text-td-muted -mt-1.5">Down length?</p>
+                <div className="flex gap-2.5">
+                  {[30, 40].map((len) => (
+                    <button
+                      key={len}
+                      onClick={() => setLength(len as 30 | 40)}
+                      className={`flex-1 flex flex-col items-center gap-2 border-[1.5px] rounded-xl py-5 px-2.5 font-semibold text-[13.5px]
+                        ${length === len ? "border-td-gold bg-td-gold/10 text-td-goldsoft" : "border-td-border bg-td-surface2 hover:border-td-gold"}`}
+                    >
+                      <Clock size={20} />
+                      <span>{len} min</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
+              <span>Shift start time</span>
+              <input
+                type="time"
+                step={1800}
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] font-mono focus:outline focus:outline-2 focus:outline-td-gold"
+              />
+            </label>
+
             <div className="flex gap-2.5 mt-1.5">
               <button
                 onClick={() => setType(null)}
@@ -71,7 +106,7 @@ export default function NewShiftModal({
                 Back
               </button>
               <button
-                onClick={() => onCreate("tournament", length)}
+                onClick={() => onCreate(type, type === "cash" ? 30 : length, buildShiftStartISO())}
                 className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
               >
                 <Check size={16} /> Build shift

@@ -8,12 +8,7 @@ export function uid(): string {
 
 export function buildBlocks(startISO: string, downLength: number): DownBlock[] {
   const count = Math.round(SHIFT_MINUTES / downLength);
-  let start = new Date(startISO);
-  if (downLength === 30) {
-    const minutes = start.getMinutes();
-    const roundedMinutes = minutes < 30 ? 0 : 30;
-    start = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), roundedMinutes, 0, 0);
-  }
+  const start = new Date(startISO);
   const blocks: DownBlock[] = [];
   for (let i = 0; i < count; i++) {
     const s = new Date(start.getTime() + i * downLength * 60000);
