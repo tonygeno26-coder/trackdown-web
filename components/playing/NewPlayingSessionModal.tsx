@@ -9,8 +9,19 @@ import {
   PlayingField,
   PrimaryPlayingButton,
   SecondaryPlayingButton,
-  playingInputClass,
 } from "@/components/playing/PlayingUi";
+import {
+  ChoiceButton,
+  ChoiceGrid,
+  SheetFooter,
+  TextInput,
+  CurrencyInput,
+} from "@/components/ui";
+
+const SESSION_TYPES: { key: PlayingSessionType; label: string; icon: typeof Coffee }[] = [
+  { key: "cash", label: "Cash Game", icon: Coffee },
+  { key: "tournament", label: "Tournament", icon: Spade },
+];
 
 export default function NewPlayingSessionModal({
   onCancel,
@@ -52,34 +63,38 @@ export default function NewPlayingSessionModal({
   };
 
   return (
-    <PlayingBottomSheet title="Start Session" onClose={onCancel}>
+    <PlayingBottomSheet
+      title="Start Session"
+      onClose={onCancel}
+      footer={
+        type ? (
+          <SheetFooter>
+            <SecondaryPlayingButton type="button" onClick={() => setType(null)} disabled={saving}>
+              Back
+            </SecondaryPlayingButton>
+            <PrimaryPlayingButton type="submit" form="new-playing-form" disabled={saving}>
+              <Check size={16} aria-hidden />
+              {saving ? "Starting…" : "Start Session"}
+            </PrimaryPlayingButton>
+          </SheetFooter>
+        ) : undefined
+      }
+    >
       {!type ? (
         <>
-          <p className="-mt-1 text-[14px] text-td-muted">What are you playing?</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setType("cash")}
-              className="flex flex-col items-center gap-3 rounded-td border border-td-border/90 bg-td-surface2/70 py-7 font-semibold text-[13px] transition-colors hover:border-td-gold/40"
-            >
-              <Coffee size={24} strokeWidth={1.75} className="text-td-gold" />
-              <span>Cash Game</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("tournament")}
-              className="flex flex-col items-center gap-3 rounded-td border border-td-border/90 bg-td-surface2/70 py-7 font-semibold text-[13px] transition-colors hover:border-td-gold/40"
-            >
-              <Spade size={24} strokeWidth={1.75} className="text-td-gold" />
-              <span>Tournament</span>
-            </button>
-          </div>
+          <p className="-mt-1 mb-3 text-[14px] text-td-muted">What are you playing?</p>
+          <ChoiceGrid>
+            {SESSION_TYPES.map(({ key, label, icon: Icon }) => (
+              <ChoiceButton key={key} icon={Icon} onClick={() => setType(key)}>
+                {label}
+              </ChoiceButton>
+            ))}
+          </ChoiceGrid>
         </>
       ) : (
-        <form onSubmit={submit} className="flex flex-col gap-4">
+        <form id="new-playing-form" onSubmit={submit} className="flex flex-col gap-4">
           <PlayingField label="Session title (optional)">
-            <input
-              className={playingInputClass}
+            <TextInput
               placeholder="e.g. Friday night session"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -87,8 +102,7 @@ export default function NewPlayingSessionModal({
           </PlayingField>
 
           <PlayingField label="Location (optional)">
-            <input
-              className={playingInputClass}
+            <TextInput
               placeholder="e.g. Bellagio"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -96,9 +110,8 @@ export default function NewPlayingSessionModal({
           </PlayingField>
 
           <PlayingField label="Game">
-            <input
+            <TextInput
               required
-              className={playingInputClass}
               placeholder="e.g. No-Limit Hold'em"
               value={game}
               onChange={(e) => setGame(e.target.value)}
@@ -107,8 +120,7 @@ export default function NewPlayingSessionModal({
           </PlayingField>
 
           <PlayingField label="Stakes (optional)">
-            <input
-              className={playingInputClass}
+            <TextInput
               placeholder={type === "cash" ? "e.g. 1/2 NLH" : "e.g. $600 Main Event"}
               value={stakes}
               onChange={(e) => setStakes(e.target.value)}
@@ -116,40 +128,22 @@ export default function NewPlayingSessionModal({
           </PlayingField>
 
           <PlayingField label="Start time">
-            <input
+            <TextInput
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className={`${playingInputClass} font-mono`}
+              className="font-mono"
             />
           </PlayingField>
 
           <PlayingField label={type === "cash" ? "Initial Buy-in" : "Entry Cost"}>
-            <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
-              <span className="font-mono text-td-muted">$</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                min="0"
-                required
-                placeholder="0"
-                value={initialBuyIn}
-                onChange={(e) => setInitialBuyIn(e.target.value)}
-                className="flex-1 border-none bg-transparent py-3 pl-1 font-mono font-semibold text-td-cream focus:outline-none"
-              />
-            </div>
+            <CurrencyInput
+              required
+              placeholder="0"
+              value={initialBuyIn}
+              onChange={setInitialBuyIn}
+            />
           </PlayingField>
-
-          <div className="mt-2 grid grid-cols-2 gap-3">
-            <SecondaryPlayingButton type="button" onClick={() => setType(null)} disabled={saving}>
-              Back
-            </SecondaryPlayingButton>
-            <PrimaryPlayingButton type="submit" disabled={saving}>
-              <Check size={16} />
-              {saving ? "Starting…" : "Start Session"}
-            </PrimaryPlayingButton>
-          </div>
         </form>
       )}
     </PlayingBottomSheet>

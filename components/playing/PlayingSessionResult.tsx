@@ -10,21 +10,48 @@ import {
   formatSignedMoney,
   hoursPlayed,
   netResult,
-  netResultColorClass,
   sessionHourlyRate,
   totalBuyIns,
 } from "@/lib/playing";
+import { sessionCategoryLabel } from "@/lib/gaming";
 import { fmtTime } from "@/lib/blocks";
-import { PlayingCard, PrimaryPlayingButton, SecondaryPlayingButton, playingFadeIn } from "@/components/playing/PlayingUi";
+import {
+  ResultPanel,
+  SurfaceCard,
+  MoneyValue,
+  StatusBadge,
+  PrimaryButton,
+  SecondaryButton,
+  fadeSlide,
+} from "@/components/ui";
+
+function DetailRow({
+  label,
+  value,
+  accent = "text-td-cream",
+}: {
+  label: string;
+  value: string;
+  accent?: string;
+}) {
+  return (
+    <div className="flex justify-between gap-3">
+      <span className="shrink-0 text-td-muted">{label}</span>
+      <span className={`text-right font-mono text-[13px] font-semibold ${accent}`}>{value}</span>
+    </div>
+  );
+}
 
 export default function PlayingSessionResult({
   session,
   onDismiss,
+  dismissLabel = "Done",
   showSaveHandPrompt,
   onSaveHand,
 }: {
   session: PlayingSession;
   onDismiss: () => void;
+  dismissLabel?: string;
   showSaveHandPrompt?: boolean;
   onSaveHand?: () => void;
 }) {
@@ -33,95 +60,70 @@ export default function PlayingSessionResult({
   const hourly = sessionHourlyRate(session);
   const isWin = net != null && net > 0;
   const isLoss = net != null && net < 0;
+  const variant = isWin ? "win" : isLoss ? "loss" : "neutral";
+  const badgeVariant = isWin ? "positive" : isLoss ? "negative" : "neutral";
+  const badgeLabel = isWin ? "WIN" : isLoss ? "LOSS" : "BREAK EVEN";
+  const hourlyAccent = isWin ? "text-td-goldsoft" : isLoss ? "text-red-300" : "text-td-cream";
 
   return (
-    <motion.div {...playingFadeIn} className="space-y-6">
-      <PlayingCard className="relative overflow-hidden px-6 py-10 text-center">
-        <div
-          aria-hidden
-          className={`pointer-events-none absolute inset-0 ${
-            isWin
-              ? "bg-[radial-gradient(circle_at_50%_20%,color-mix(in_srgb,#2ecc71_12%,transparent),transparent_60%)]"
-              : isLoss
-                ? "bg-[radial-gradient(circle_at_50%_20%,color-mix(in_srgb,#8a1620_18%,transparent),transparent_60%)]"
-                : ""
-          }`}
+    <motion.div {...fadeSlide} className="space-y-5">
+      <p className="text-center text-[10px] font-semibold uppercase tracking-[1.5px] text-td-gold">
+        {sessionCategoryLabel(session)}
+      </p>
+
+      <ResultPanel variant={variant} label="Session Result">
+        <div className="flex flex-col items-center gap-4">
+          <StatusBadge variant={badgeVariant}>{badgeLabel}</StatusBadge>
+          <MoneyValue
+            amount={net != null ? formatSignedMoney(net) : "—"}
+            signed
+            positive={isWin ? true : isLoss ? false : undefined}
+            size="xl"
+          />
+        </div>
+      </ResultPanel>
+
+      <SurfaceCard className="space-y-3 px-5 py-5 text-[13px]">
+        <DetailRow label="Total Buy-ins" value={formatMoneyPrecise(totalBuyIns(session))} />
+        <DetailRow
+          label={cashOutLabel(session.session_type)}
+          value={formatMoneyPrecise(session.cash_out || 0)}
         />
-
-        <span className="relative text-[10px] font-semibold uppercase tracking-[2.5px] text-td-muted">
-          Session Result
-        </span>
-        <span
-          className={`relative mt-4 block font-display text-2xl font-extrabold uppercase tracking-[3px] ${
-            isWin ? "text-td-goldsoft" : isLoss ? "text-red-300" : "text-td-cream"
-          }`}
-        >
-          {isWin ? "Win" : isLoss ? "Loss" : "Even"}
-        </span>
-        <span
-          className={`relative mt-3 block font-mono text-[44px] font-semibold leading-none ${netResultColorClass(net)}`}
-        >
-          {net != null ? formatSignedMoney(net) : "—"}
-        </span>
-
-        {hours != null && (
-          <span className="relative mt-5 block text-[14px] text-td-muted">
-            {formatDuration(hours)} played
-          </span>
-        )}
+        <DetailRow label="Expenses" value={formatMoneyPrecise(session.expenses || 0)} />
+        {hours != null && <DetailRow label="Hours Played" value={formatDuration(hours)} />}
         {hourly != null && (
-          <span
-            className={`relative mt-1 block font-mono text-[18px] font-semibold ${netResultColorClass(hourly)}`}
-          >
-            {formatSignedMoney(hourly)}/hour
-          </span>
+          <DetailRow label="Hourly Rate" value={`${formatSignedMoney(hourly)}/hr`} accent={hourlyAccent} />
         )}
-      </PlayingCard>
-
-      <PlayingCard className="space-y-3 px-5 py-5 text-[13px]">
-        <div className="flex justify-between">
-          <span className="text-td-muted">Total Buy-ins</span>
-          <span className="font-mono font-semibold">{formatMoneyPrecise(totalBuyIns(session))}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-td-muted">{cashOutLabel(session.session_type)}</span>
-          <span className="font-mono font-semibold">{formatMoneyPrecise(session.cash_out || 0)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-td-muted">Expenses</span>
-          <span className="font-mono font-semibold">{formatMoneyPrecise(session.expenses || 0)}</span>
-        </div>
         {session.ended_at && (
-          <div className="flex justify-between border-t border-td-border/70 pt-3">
-            <span className="text-td-muted">Ended</span>
-            <span className="font-mono">{fmtTime(session.ended_at)}</span>
+          <div className="space-y-3 border-t border-td-border/70 pt-3">
+            <DetailRow label="Ended" value={fmtTime(session.ended_at)} />
           </div>
         )}
-      </PlayingCard>
+      </SurfaceCard>
 
       {session.notes && (
         <p className="px-1 text-[13px] italic leading-relaxed text-td-muted">{session.notes}</p>
       )}
 
       {showSaveHandPrompt && onSaveHand && (
-        <PlayingCard className="space-y-3 p-5">
+        <SurfaceCard className="space-y-3 p-5">
           <p className="text-center text-[14px] font-semibold text-td-cream">
             Would you like to save a hand?
           </p>
           <p className="text-center text-[12px] text-td-muted">
             Save a memorable hand from this session for study and review.
           </p>
-          <PrimaryPlayingButton type="button" onClick={onSaveHand}>
-            <Hand size={16} /> Save a Hand
-          </PrimaryPlayingButton>
-          <SecondaryPlayingButton type="button" onClick={onDismiss}>
+          <PrimaryButton type="button" onClick={onSaveHand}>
+            <Hand size={16} aria-hidden /> Save a Hand
+          </PrimaryButton>
+          <SecondaryButton type="button" onClick={onDismiss}>
             No Thanks
-          </SecondaryPlayingButton>
-        </PlayingCard>
+          </SecondaryButton>
+        </SurfaceCard>
       )}
 
       {(!showSaveHandPrompt || !onSaveHand) && (
-        <PrimaryPlayingButton onClick={onDismiss}>Done</PrimaryPlayingButton>
+        <PrimaryButton onClick={onDismiss}>{dismissLabel}</PrimaryButton>
       )}
     </motion.div>
   );

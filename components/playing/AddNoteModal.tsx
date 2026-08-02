@@ -7,8 +7,8 @@ import {
   PlayingField,
   PrimaryPlayingButton,
   SecondaryPlayingButton,
-  playingInputClass,
 } from "@/components/playing/PlayingUi";
+import { SheetFooter, TextareaInput } from "@/components/ui";
 
 export default function AddNoteModal({
   notes,
@@ -30,26 +30,31 @@ export default function AddNoteModal({
   };
 
   return (
-    <PlayingBottomSheet title="Add Note" onClose={onCancel}>
-      <form onSubmit={submit} className="flex flex-col gap-5">
+    <PlayingBottomSheet
+      title="Add Note"
+      onClose={onCancel}
+      footer={
+        <SheetFooter>
+          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
+            Cancel
+          </SecondaryPlayingButton>
+          <PrimaryPlayingButton type="submit" form="add-note-form" disabled={saving}>
+            <Check size={16} aria-hidden />
+            {saving ? "Saving…" : "Save Note"}
+          </PrimaryPlayingButton>
+        </SheetFooter>
+      }
+    >
+      <form id="add-note-form" onSubmit={submit}>
         <PlayingField label="Session notes">
-          <textarea
-            className={`${playingInputClass} min-h-[120px] resize-none`}
+          <TextareaInput
+            className="min-h-[120px]"
             placeholder="Table change, strategy notes, etc."
             value={value}
             onChange={(e) => setValue(e.target.value)}
             autoFocus
           />
         </PlayingField>
-        <div className="grid grid-cols-2 gap-3">
-          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
-            Cancel
-          </SecondaryPlayingButton>
-          <PrimaryPlayingButton type="submit" disabled={saving}>
-            <Check size={16} />
-            {saving ? "Saving…" : "Save Note"}
-          </PrimaryPlayingButton>
-        </div>
       </form>
     </PlayingBottomSheet>
   );

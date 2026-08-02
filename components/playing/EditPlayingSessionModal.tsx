@@ -10,8 +10,8 @@ import {
   PlayingField,
   PrimaryPlayingButton,
   SecondaryPlayingButton,
-  playingInputClass,
 } from "@/components/playing/PlayingUi";
+import { SheetFooter, TextInput, CurrencyInput } from "@/components/ui";
 
 export default function EditPlayingSessionModal({
   session,
@@ -57,35 +57,40 @@ export default function EditPlayingSessionModal({
   };
 
   return (
-    <PlayingBottomSheet title="Edit Session" onClose={onCancel}>
-      <form onSubmit={submit} className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
+    <PlayingBottomSheet
+      title="Edit Session"
+      onClose={onCancel}
+      footer={
+        <SheetFooter>
+          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
+            Cancel
+          </SecondaryPlayingButton>
+          <PrimaryPlayingButton type="submit" form="edit-session-form" disabled={saving}>
+            <Check size={16} aria-hidden />
+            {saving ? "Saving…" : "Save"}
+          </PrimaryPlayingButton>
+        </SheetFooter>
+      }
+    >
+      <form id="edit-session-form" onSubmit={submit} className="flex flex-col gap-4">
         <PlayingField label="Location">
-          <input
-            className={playingInputClass}
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-          />
+          <TextInput value={location} onChange={(e) => setLocation(e.target.value)} />
         </PlayingField>
 
         <PlayingField label="Game">
-          <input
-            required
-            className={playingInputClass}
-            value={game}
-            onChange={(e) => setGame(e.target.value)}
-          />
+          <TextInput required value={game} onChange={(e) => setGame(e.target.value)} />
         </PlayingField>
 
         <PlayingField label={stakesOrMinimumLabel(session)}>
-          <input className={playingInputClass} value={stakes} onChange={(e) => setStakes(e.target.value)} />
+          <TextInput value={stakes} onChange={(e) => setStakes(e.target.value)} />
         </PlayingField>
 
         <PlayingField label="Start time">
-          <input
+          <TextInput
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className={`${playingInputClass} font-mono`}
+            className="font-mono"
           />
         </PlayingField>
 
@@ -96,30 +101,12 @@ export default function EditPlayingSessionModal({
               : "Starting Bankroll"
           }
         >
-          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
-            <span className="font-mono text-td-muted">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              required
-              value={initialBuyIn}
-              onChange={(e) => setInitialBuyIn(e.target.value)}
-              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono font-semibold text-td-cream focus:outline-none"
-            />
-          </div>
+          <CurrencyInput
+            required
+            value={initialBuyIn}
+            onChange={setInitialBuyIn}
+          />
         </PlayingField>
-
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
-            Cancel
-          </SecondaryPlayingButton>
-          <PrimaryPlayingButton type="submit" disabled={saving}>
-            <Check size={16} />
-            {saving ? "Saving…" : "Save"}
-          </PrimaryPlayingButton>
-        </div>
       </form>
     </PlayingBottomSheet>
   );

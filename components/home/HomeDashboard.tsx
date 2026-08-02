@@ -378,6 +378,7 @@ export default function HomeDashboard({
           <PlayingSessionResult
             key="result"
             session={resultSession}
+            dismissLabel="Return Home"
             onDismiss={() => setResultSession(null)}
             showSaveHandPrompt={isPokerResult}
             onSaveHand={isPokerResult ? () => setHandBuilderOpen(true) : undefined}
