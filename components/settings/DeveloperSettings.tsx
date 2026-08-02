@@ -16,41 +16,7 @@ import {
 import { SettingsSection, settingsInputClass } from "@/components/settings/SettingsUi";
 import { PrimaryPlayingButton, SecondaryPlayingButton, PlayingCard } from "@/components/playing/PlayingUi";
 
-function ConfirmModal({
-  title,
-  message,
-  confirmLabel,
-  onCancel,
-  onConfirm,
-  busy,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-  busy?: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80" onClick={onCancel}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[520px] rounded-t-td-lg border border-td-border bg-td-surface px-6 pb-8 pt-6"
-      >
-        <h3 className="font-display text-lg font-bold uppercase tracking-[1px] text-td-cream">{title}</h3>
-        <p className="mt-3 text-[14px] leading-relaxed text-td-muted">{message}</p>
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <SecondaryPlayingButton type="button" onClick={onCancel} disabled={busy}>
-            Cancel
-          </SecondaryPlayingButton>
-          <PrimaryPlayingButton type="button" onClick={onConfirm} disabled={busy} className="border-td-red/40">
-            {busy ? "Working…" : confirmLabel}
-          </PrimaryPlayingButton>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { ConfirmSheet } from "@/components/dealing/DealingUi";
 
 export default function DeveloperSettings({
   currentTab,
@@ -258,11 +224,12 @@ export default function DeveloperSettings({
       {actionError && <p className="text-[13px] text-red-300">{actionError}</p>}
 
       {confirmClearDemo && (
-        <ConfirmModal
+        <ConfirmSheet
           title="Clear Demo Data?"
           message="This will permanently delete only records marked as demo data. Real shifts and gaming sessions will not be affected."
           confirmLabel="Clear Demo Data"
           busy={busy}
+          destructive
           onCancel={() => setConfirmClearDemo(false)}
           onConfirm={async () => {
             await runAction("Demo data cleared", clearDemoData);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Search, Hand } from "lucide-react";
 import { SavedHand, SavedHandFilters } from "@/lib/hands/types";
 import {
   fetchSavedHands,
@@ -10,10 +10,18 @@ import {
   uniqueTags,
 } from "@/lib/hands/storage";
 import SavedHandCard from "@/components/train/my-hands/SavedHandCard";
-import { TrainHeader } from "@/components/train/TrainingUi";
-import { PlayingCard, playingInputClass } from "@/components/playing/PlayingUi";
-
-const EMPTY_FILTERS: SavedHandFilters = {
+import {
+  DrillScreen,
+  DrillHeader,
+} from "@/components/train/shared";
+import {
+  TextInput,
+  SelectInput,
+  FormField,
+  EmptyState,
+  LoadingState,
+  ErrorState,
+} from "@/components/ui";: SavedHandFilters = {
   search: "",
   casino: "",
   game: "",
@@ -36,12 +44,18 @@ export default function MyHandsScreen({
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<SavedHandFilters>(EMPTY_FILTERS);
 
-  useEffect(() => {
+  const reload = () => {
+    setLoading(true);
+    setError(null);
     fetchSavedHands().then(({ data, error: err }) => {
       setHands(data);
       setError(err);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    reload();
   }, []);
 
   const filtered = useMemo(() => filterSavedHands(hands, filters), [hands, filters]);
@@ -55,8 +69,8 @@ export default function MyHandsScreen({
   };
 
   return (
-    <div className="pb-28">
-      <TrainHeader
+    <DrillScreen>
+      <DrillHeader
         title="My Hands"
         subtitle="Saved poker hands for study and street-by-street review."
         onBack={onBack}
@@ -64,12 +78,13 @@ export default function MyHandsScreen({
 
       <div className="mb-4 space-y-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-td-muted" />
-          <input
-            className={`${playingInputClass} pl-10`}
+          <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-td-muted" aria-hidden />
+          <TextInput
+            className="pl-10"
             placeholder="Search hands…"
             value={filters.search}
             onChange={(e) => setFilter("search", e.target.value)}
+            aria-label="Search hands"
           />
         </div>
 
@@ -84,20 +99,25 @@ export default function MyHandsScreen({
             onChange={(v) => setFilter("position", v)}
           />
           <FilterSelect label="Tag" value={filters.tag} options={tags} onChange={(v) => setFilter("tag", v)} />
-          <label className="block">
-            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-td-muted">From</span>
-            <input type="date" className={playingInputClass} value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)} />
-          </label>
+          <FormField label="From">
+            <TextInput type="date" value={filters.dateFrom} onChange={(e) => setFilter("dateFrom", e.target.value)} />
+          </FormField>
         </div>
       </div>
 
-      {loading && <PlayingCard className="p-6 text-center text-[13px] text-td-muted">Loading hands…</PlayingCard>}
-      {error && <PlayingCard className="p-4 text-[13px] text-red-300">{error}</PlayingCard>}
+      {loading && <LoadingState message="Loading hands…" />}
+      {error && <ErrorState message={error} onRetry={reload} />}
 
       {!loading && !error && filtered.length === 0 && (
-        <PlayingCard className="p-8 text-center text-[14px] text-td-muted">
-          {hands.length === 0 ? "No saved hands yet. Save a hand after a poker session or add one manually." : "No hands match your filters."}
-        </PlayingCard>
+        <EmptyState
+          icon={Hand}
+          title={hands.length === 0 ? "No Saved Hands" : "No Matches"}
+          description={
+            hands.length === 0
+              ? "Save a hand after a poker session or add one manually."
+              : "No hands match your filters."
+          }
+        />
       )}
 
       <div className="space-y-3">
@@ -105,7 +125,7 @@ export default function MyHandsScreen({
           <SavedHandCard key={hand.id} hand={hand} onClick={() => onReview(hand)} />
         ))}
       </div>
-    </div>
+    </DrillScreen>
   );
 }
 
@@ -121,14 +141,13 @@ function FilterSelect({
   onChange: (v: string) => void;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-td-muted">{label}</span>
-      <select className={playingInputClass} value={value} onChange={(e) => onChange(e.target.value)}>
+    <FormField label={label}>
+      <SelectInput value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">All</option>
         {options.map((o) => (
           <option key={o} value={o}>{o}</option>
         ))}
-      </select>
-    </label>
+      </SelectInput>
+    </FormField>
   );
 }

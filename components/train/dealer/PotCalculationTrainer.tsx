@@ -12,15 +12,16 @@ import {
   recordPotCalcResult,
 } from "@/lib/training/progress";
 import { CalculationQuestion } from "@/lib/training/types";
+import { PrimaryButton } from "@/components/ui";
 import {
-  PrimaryPlayingButton,
-  TrainFeedback,
-  TrainHeader,
-  TrainNumericInput,
-  TrainQuestionCard,
-  TrainStatsRow,
-  TrainStickyFooter,
-} from "@/components/train/TrainingUi";
+  DrillScreen,
+  DrillHeader,
+  DrillPromptCard,
+  DrillAnswerInput,
+  DrillResultCard,
+  DrillStatsStrip,
+  DrillNavigation,
+} from "@/components/train/shared";
 
 export default function PotCalculationTrainer({
   onBack,
@@ -74,27 +75,27 @@ export default function PotCalculationTrainer({
   };
 
   return (
-    <div className="pb-28">
-      <TrainHeader title="Pot Calculation" subtitle="Adaptive NLHE pot, call, and raise math." onBack={onBack} />
+    <DrillScreen>
+      <DrillHeader title="Pot Calculation" subtitle="Adaptive NLHE pot, call, and raise math." onBack={onBack} />
 
-      <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
-        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
-        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
-        <TrainStatsRow label="Difficulty" value={difficultyForTopic(topic)} />
-      </div>
+      <DrillStatsStrip
+        rows={[
+          { label: "Topic accuracy", value: `${adaptiveStats.accuracy}%` },
+          { label: "Confidence", value: String(adaptiveStats.confidence) },
+          { label: "Streak", value: String(adaptiveStats.currentStreak) },
+          { label: "Difficulty", value: difficultyForTopic(topic) },
+        ]}
+      />
 
-      <TrainQuestionCard className="mt-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-td-muted">
-          {question.difficulty} · {question.type.replace(/_/g, " ")}
-        </p>
-        <p className="text-[13px] text-td-muted">{question.previousAction}</p>
-        <p className="text-[16px] font-semibold leading-snug text-td-cream">{question.prompt}</p>
-
+      <DrillPromptCard
+        meta={`${question.difficulty} · ${question.type.replace(/_/g, " ")}`}
+        context={question.previousAction}
+        prompt={question.prompt}
+      >
         {!submitted ? (
-          <TrainNumericInput value={answer} onChange={setAnswer} label="Your answer" prefix="$" />
+          <DrillAnswerInput value={answer} onChange={setAnswer} label="Your answer" />
         ) : (
-          <TrainFeedback correct={correct} title={correct ? "Correct" : "Incorrect"}>
+          <DrillResultCard correct={correct} title={correct ? "Correct" : "Incorrect"}>
             <p>
               Correct answer:{" "}
               <span className="font-mono font-bold text-td-goldsoft">${question.correctAnswer}</span>
@@ -104,21 +105,21 @@ export default function PotCalculationTrainer({
                 <p key={i}>{step}</p>
               ))}
             </div>
-          </TrainFeedback>
+          </DrillResultCard>
         )}
-      </TrainQuestionCard>
+      </DrillPromptCard>
 
-      <TrainStickyFooter>
+      <DrillNavigation>
         {!submitted ? (
-          <PrimaryPlayingButton type="button" onClick={submit} disabled={!answer.trim()}>
+          <PrimaryButton type="button" onClick={submit} disabled={!answer.trim()}>
             Submit Answer
-          </PrimaryPlayingButton>
+          </PrimaryButton>
         ) : (
-          <PrimaryPlayingButton type="button" onClick={next}>
+          <PrimaryButton type="button" onClick={next}>
             Next Question
-          </PrimaryPlayingButton>
+          </PrimaryButton>
         )}
-      </TrainStickyFooter>
-    </div>
+      </DrillNavigation>
+    </DrillScreen>
   );
 }

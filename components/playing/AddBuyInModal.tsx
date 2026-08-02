@@ -8,6 +8,7 @@ import {
   PrimaryPlayingButton,
   SecondaryPlayingButton,
 } from "@/components/playing/PlayingUi";
+import { SheetFooter, CurrencyInput } from "@/components/ui";
 
 export default function AddBuyInModal({
   isTournament,
@@ -34,35 +35,22 @@ export default function AddBuyInModal({
     <PlayingBottomSheet
       title={isTournament ? "Add Re-entry / Add-on" : "Add Buy-in"}
       onClose={onCancel}
-    >
-      <form onSubmit={submit} className="flex flex-col gap-5">
-        <PlayingField label="Amount">
-          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
-            <span className="font-mono text-td-muted">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              required
-              autoFocus
-              placeholder="0"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[20px] font-semibold text-td-cream focus:outline-none"
-            />
-          </div>
-        </PlayingField>
-
-        <div className="grid grid-cols-2 gap-3">
+      footer={
+        <SheetFooter>
           <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
             Cancel
           </SecondaryPlayingButton>
-          <PrimaryPlayingButton type="submit" disabled={saving}>
+          <PrimaryPlayingButton type="submit" form="add-buyin-form" disabled={saving}>
             <Check size={16} />
             {saving ? "Saving…" : "Add"}
           </PrimaryPlayingButton>
-        </div>
+        </SheetFooter>
+      }
+    >
+      <form id="add-buyin-form" onSubmit={submit}>
+        <PlayingField label="Amount">
+          <CurrencyInput value={amount} onChange={setAmount} required autoFocus placeholder="0" />
+        </PlayingField>
       </form>
     </PlayingBottomSheet>
   );

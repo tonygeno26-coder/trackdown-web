@@ -9,8 +9,8 @@ import {
   PlayingField,
   PrimaryPlayingButton,
   SecondaryPlayingButton,
-  playingInputClass,
 } from "@/components/playing/PlayingUi";
+import { SheetFooter, CurrencyInput, TextInput } from "@/components/ui";
 
 export default function EndPlayingSessionModal({
   session,
@@ -38,60 +38,33 @@ export default function EndPlayingSessionModal({
   };
 
   return (
-    <PlayingBottomSheet title="End Session" onClose={onCancel}>
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        <PlayingField label={cashOutLabel(session.session_type)}>
-          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
-            <span className="font-mono text-td-muted">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              required
-              autoFocus
-              placeholder="0"
-              value={cashOut}
-              onChange={(e) => setCashOut(e.target.value)}
-              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[20px] font-semibold text-td-cream focus:outline-none"
-            />
-          </div>
-        </PlayingField>
-
-        <PlayingField label="Expenses (optional)">
-          <div className="flex items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
-            <span className="font-mono text-td-muted">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="0.01"
-              min="0"
-              placeholder="0"
-              value={expenses}
-              onChange={(e) => setExpenses(e.target.value)}
-              className="flex-1 border-none bg-transparent py-3 pl-1 font-mono font-semibold text-td-cream focus:outline-none"
-            />
-          </div>
-        </PlayingField>
-
-        <PlayingField label="Notes">
-          <input
-            className={playingInputClass}
-            placeholder="optional"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </PlayingField>
-
-        <div className="mt-2 grid grid-cols-2 gap-3">
+    <PlayingBottomSheet
+      title="End Session"
+      onClose={onCancel}
+      footer={
+        <SheetFooter>
           <SecondaryPlayingButton type="button" onClick={onCancel} disabled={saving}>
             Cancel
           </SecondaryPlayingButton>
-          <PrimaryPlayingButton type="submit" disabled={saving}>
+          <PrimaryPlayingButton type="submit" form="end-session-form" disabled={saving}>
             <Check size={16} />
             {saving ? "Saving…" : "End & Save"}
           </PrimaryPlayingButton>
-        </div>
+        </SheetFooter>
+      }
+    >
+      <form id="end-session-form" onSubmit={submit} className="flex flex-col gap-4">
+        <PlayingField label={cashOutLabel(session.session_type)}>
+          <CurrencyInput value={cashOut} onChange={setCashOut} required autoFocus placeholder="0" />
+        </PlayingField>
+
+        <PlayingField label="Expenses (optional)">
+          <CurrencyInput value={expenses} onChange={setExpenses} placeholder="0" />
+        </PlayingField>
+
+        <PlayingField label="Notes">
+          <TextInput placeholder="optional" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        </PlayingField>
       </form>
     </PlayingBottomSheet>
   );

@@ -1,7 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
-import { PlayingCard } from "@/components/playing/PlayingUi";
+import { SurfaceCard } from "@/components/ui";
+import { FormField as UiFormField } from "@/components/ui";
 
 export function SettingsSection({
   title,
@@ -20,7 +21,7 @@ export function SettingsSection({
         </h2>
         {description && <p className="mt-1 text-[12px] leading-relaxed text-td-muted">{description}</p>}
       </div>
-      <PlayingCard className="space-y-4 p-4">{children}</PlayingCard>
+      <SurfaceCard className="space-y-4 p-4">{children}</SurfaceCard>
     </section>
   );
 }
@@ -35,11 +36,9 @@ export function SettingsField({
   children: ReactNode;
 }) {
   return (
-    <label className="block space-y-2">
-      <span className="text-[12px] font-semibold uppercase tracking-[0.8px] text-td-muted">{label}</span>
+    <UiFormField label={label} hint={hint}>
       {children}
-      {hint && <span className="block text-[11px] leading-relaxed text-td-muted/90">{hint}</span>}
-    </label>
+    </UiFormField>
   );
 }
 

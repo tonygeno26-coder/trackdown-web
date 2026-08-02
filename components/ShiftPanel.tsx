@@ -5,6 +5,8 @@ import { Plus, PenLine } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
 import { fmtMoney, netTips, fmtHourlyRate, fmtMoneyPrecise, estimatedTournamentEarnings } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
+import AddTimeSheet from "./AddTimeSheet";
+import { SurfaceCard, ProgressBar } from "@/components/ui";
 
 export default function ShiftPanel({
   shift,
@@ -33,7 +35,7 @@ export default function ShiftPanel({
 
   return (
     <>
-      <section className="bg-td-surface border border-td-border rounded-2xl px-5.5 py-5 mb-4">
+      <SurfaceCard className="mb-4 px-5 py-5">
         <div className="flex justify-between items-center mb-1.5">
           <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
             {typeLabel} · {shift.down_length}m downs
@@ -85,12 +87,7 @@ export default function ShiftPanel({
           </>
         )}
 
-        <div className="mt-3.5 h-1 bg-td-surface2 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-td-gold to-td-goldsoft rounded-full transition-all duration-300"
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
+        <ProgressBar value={doneCount} max={shift.blocks.length} className="mt-3.5" />
 
         {!isTournament && (
           <button
@@ -101,7 +98,7 @@ export default function ShiftPanel({
             {shift.is_lump_sum ? "Edit total" : "Log entire shift instead"}
           </button>
         )}
-      </section>
+      </SurfaceCard>
 
       <div className="flex flex-col gap-2">
         {shift.blocks.map((b) => (
@@ -109,37 +106,24 @@ export default function ShiftPanel({
         ))}
 
         <div className="mt-1">
-          {!extendOpen ? (
-            <button
-              onClick={() => setExtendOpen(true)}
-              className="w-full flex items-center justify-center gap-2 rounded-[11px] border border-dashed border-td-border text-td-muted text-sm font-semibold py-3 hover:border-td-gold hover:text-td-goldsoft"
-            >
-              <Plus size={15} /> Add more time
-            </button>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <span className="text-[12px] text-td-muted text-center">Add how much more time?</span>
-              <div className="flex gap-2">
-                {[60, 120, 240].map((mins) => (
-                  <button
-                    key={mins}
-                    onClick={() => {
-                      onExtend(mins);
-                      setExtendOpen(false);
-                    }}
-                    className="flex-1 rounded-[10px] py-2.5 font-semibold text-[13px] bg-td-surface2 border border-td-border text-td-cream hover:border-td-gold"
-                  >
-                    {mins < 120 ? `${mins}m` : `${mins / 60}h`}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setExtendOpen(false)} className="text-[12px] text-td-muted text-center py-1">
-                Cancel
-              </button>
-            </div>
-          )}
+          <button
+            onClick={() => setExtendOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-td border border-dashed border-td-border py-3 text-sm font-semibold text-td-muted hover:border-td-gold hover:text-td-goldsoft"
+          >
+            <Plus size={15} /> Add more time
+          </button>
         </div>
       </div>
+
+      {extendOpen && (
+        <AddTimeSheet
+          onCancel={() => setExtendOpen(false)}
+          onExtend={(mins) => {
+            onExtend(mins);
+            setExtendOpen(false);
+          }}
+        />
+      )}
     </>
   );
 }

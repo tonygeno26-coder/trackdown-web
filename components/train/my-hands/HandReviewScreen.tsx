@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { parseCardList } from "@/lib/cards";
-import CardRow from "@/components/cards/CardRow";
 import { SavedHand } from "@/lib/hands/types";
 import { PokerAction } from "@/lib/training/types";
 import {
@@ -10,22 +9,16 @@ import {
   evaluateReplayChoice,
   ReplayDecisionPoint,
 } from "@/lib/hands/replay-strategy";
+import CardRow from "@/components/cards/CardRow";
+import PokerActionButtons, { POKER_ACTION_LABELS } from "@/components/train/gaming/PokerActionButtons";
 import {
-  TrainFeedback,
-  TrainHeader,
-  TrainQuestionCard,
-  PrimaryPlayingButton,
-  SecondaryPlayingButton,
-} from "@/components/train/TrainingUi";
-import { PlayingCard } from "@/components/playing/PlayingUi";
-
-const ACTION_LABELS: Record<PokerAction, string> = {
-  fold: "Fold",
-  check: "Check",
-  call: "Call",
-  bet: "Bet",
-  raise: "Raise",
-};
+  DrillScreen,
+  DrillHeader,
+  DrillPromptCard,
+  DrillNavigation,
+  DrillResultCard,
+} from "@/components/train/shared";
+import { PrimaryButton, SurfaceCard } from "@/components/ui";
 
 export default function HandReviewScreen({
   hand,
@@ -60,14 +53,14 @@ export default function HandReviewScreen({
     current && selected ? evaluateReplayChoice(hand, current, selected) : null;
 
   return (
-    <div className="pb-28">
-      <TrainHeader
+    <DrillScreen>
+      <DrillHeader
         title="Hand Review"
         subtitle={`${hand.casino || "Hand"} · ${hand.stakes} · ${hand.hero_position} vs ${hand.villain_position}`}
         onBack={onBack}
       />
 
-      <PlayingCard className="mb-4 space-y-3 p-5 text-center">
+      <SurfaceCard className="mb-4 space-y-3 p-5 text-center">
         <CardRow cards={heroCards} size="medium" highlighted />
         {boardCards.length > 0 && (
           <>
@@ -78,34 +71,27 @@ export default function HandReviewScreen({
         <p className="text-[12px] text-td-muted">
           Stack {hand.effective_stack} · Result: {hand.result}
         </p>
-      </PlayingCard>
+      </SurfaceCard>
 
       {!done && current && (
         <>
-          <TrainQuestionCard>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-td-goldsoft">
-              {current.street}
-            </p>
-            <p className="text-[15px] font-semibold text-td-cream">{current.prompt}</p>
-
+          <DrillPromptCard meta={current.street} prompt={current.prompt}>
             {!revealed && (
-              <div className="grid grid-cols-2 gap-2 pt-2">
-                {current.availableActions.map((action) => (
-                  <SecondaryPlayingButton key={action} type="button" onClick={() => handleSelect(action)}>
-                    {ACTION_LABELS[action]}
-                  </SecondaryPlayingButton>
-                ))}
-              </div>
+              <PokerActionButtons
+                actions={current.availableActions}
+                onSelect={handleSelect}
+                large
+              />
             )}
 
             {revealed && result && (
-              <TrainFeedback
+              <DrillResultCard
                 correct={result.isPreferred}
                 title={result.isPreferred ? "Matches recommended line" : "Alternative line"}
               >
                 <p>
-                  You chose <strong>{ACTION_LABELS[result.userAction]}</strong>. Recommended:{" "}
-                  <strong>{ACTION_LABELS[result.recommended]}</strong>.
+                  You chose <strong>{POKER_ACTION_LABELS[result.userAction]}</strong>. Recommended:{" "}
+                  <strong>{POKER_ACTION_LABELS[result.recommended]}</strong>.
                 </p>
                 <p className="mt-2">{result.explanation}</p>
                 <ul className="mt-3 space-y-1">
@@ -116,22 +102,22 @@ export default function HandReviewScreen({
                     </li>
                   ))}
                 </ul>
-              </TrainFeedback>
+              </DrillResultCard>
             )}
-          </TrainQuestionCard>
+          </DrillPromptCard>
 
           {revealed && (
-            <div className="mt-4">
-              <PrimaryPlayingButton type="button" onClick={next}>
+            <DrillNavigation>
+              <PrimaryButton type="button" onClick={next}>
                 {step < points.length - 1 ? "Next Street" : "Finish Review"}
-              </PrimaryPlayingButton>
-            </div>
+              </PrimaryButton>
+            </DrillNavigation>
           )}
         </>
       )}
 
       {done && (
-        <PlayingCard className="space-y-4 p-6 text-center">
+        <SurfaceCard className="space-y-4 p-6 text-center">
           <p className="font-display text-lg font-bold text-td-cream">Review Complete</p>
           <p className="text-[13px] text-td-muted">
             You reviewed {points.length} decision point{points.length === 1 ? "" : "s"} across this hand.
@@ -139,9 +125,9 @@ export default function HandReviewScreen({
           {hand.notes && (
             <p className="text-left text-[13px] italic text-td-muted">{hand.notes}</p>
           )}
-          <PrimaryPlayingButton type="button" onClick={onBack}>Back to My Hands</PrimaryPlayingButton>
-        </PlayingCard>
+          <PrimaryButton type="button" onClick={onBack}>Back to My Hands</PrimaryButton>
+        </SurfaceCard>
       )}
-    </div>
+    </DrillScreen>
   );
 }

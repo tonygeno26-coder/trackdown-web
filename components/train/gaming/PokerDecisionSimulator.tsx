@@ -15,24 +15,14 @@ import {
 import { PokerAction, PokerScenario } from "@/lib/training/types";
 import PokerTable from "@/components/train/gaming/PokerTable";
 import PokerScenarioResult from "@/components/train/gaming/PokerScenarioResult";
+import PokerActionButtons from "@/components/train/gaming/PokerActionButtons";
+import { PrimaryButton } from "@/components/ui";
 import {
-  PrimaryPlayingButton,
-  TrainHeader,
-  TrainStatsRow,
-  TrainStickyFooter,
-} from "@/components/train/TrainingUi";
-
-const ACTION_LABELS: Record<PokerAction, string> = {
-  fold: "Fold",
-  call: "Call",
-  check: "Check",
-  bet: "Bet",
-  raise: "Raise",
-};
-
-function actionButtonLabel(scenario: PokerScenario, action: PokerAction): string {
-  return scenario.actionLabels?.[action] ?? ACTION_LABELS[action];
-}
+  DrillScreen,
+  DrillHeader,
+  DrillStatsStrip,
+  DrillNavigation,
+} from "@/components/train/shared";
 
 export default function PokerDecisionSimulator({
   onBack,
@@ -90,34 +80,32 @@ export default function PokerDecisionSimulator({
   };
 
   return (
-    <div className="pb-28">
-      <TrainHeader
+    <DrillScreen>
+      <DrillHeader
         title="Decision Trainer"
         subtitle="Adaptive solver-style scenarios — not a computed Nash equilibrium."
         onBack={onBack}
       />
 
-      <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
-        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
-        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
-        <TrainStatsRow label="Focus" value={focusTopic ?? mapScenarioToTopic(scenario)} />
-      </div>
+      <DrillStatsStrip
+        rows={[
+          { label: "Topic accuracy", value: `${adaptiveStats.accuracy}%` },
+          { label: "Confidence", value: String(adaptiveStats.confidence) },
+          { label: "Streak", value: String(adaptiveStats.currentStreak) },
+          { label: "Focus", value: focusTopic ?? mapScenarioToTopic(scenario) },
+        ]}
+      />
 
       <PokerTable scenario={scenario} highlightHero={submitted} />
 
       {!submitted ? (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {scenario.availableActions.map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => submit(action)}
-              className="rounded-xl border border-td-border bg-td-surface2 py-4 text-[14px] font-bold uppercase tracking-wide text-td-cream hover:border-td-gold/40"
-            >
-              {actionButtonLabel(scenario, action)}
-            </button>
-          ))}
+        <div className="mt-4">
+          <PokerActionButtons
+            actions={scenario.availableActions}
+            labels={scenario.actionLabels}
+            onSelect={submit}
+            large
+          />
         </div>
       ) : (
         chosen && (
@@ -132,13 +120,13 @@ export default function PokerDecisionSimulator({
         )
       )}
 
-      <TrainStickyFooter>
+      <DrillNavigation>
         {submitted && (
-          <PrimaryPlayingButton type="button" onClick={next}>
+          <PrimaryButton type="button" onClick={next}>
             Next Scenario
-          </PrimaryPlayingButton>
+          </PrimaryButton>
         )}
-      </TrainStickyFooter>
-    </div>
+      </DrillNavigation>
+    </DrillScreen>
   );
 }

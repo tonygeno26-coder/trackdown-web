@@ -5,6 +5,7 @@ import { parseCardList } from "@/lib/cards";
 import { PokerScenario } from "@/lib/training/types";
 import { getStreetFromBoard, logScenarioValidationWarnings } from "@/lib/training/scenario-validation";
 import CardRow from "@/components/cards/CardRow";
+import { SurfaceCard } from "@/components/ui";
 import PokerBoard from "@/components/train/gaming/PokerBoard";
 import PokerSeat from "@/components/train/gaming/PokerSeat";
 
@@ -27,7 +28,7 @@ export default function PokerTable({
   const isPlo = scenario.gameType.toLowerCase().includes("plo") || scenario.tags.includes("plo");
 
   return (
-    <div className="overflow-hidden rounded-td-lg border border-td-border/80 shadow-td-card">
+    <SurfaceCard className="overflow-hidden p-0">
       <div className="border-b border-td-border/60 bg-td-surface2/60 px-4 py-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-td-muted">
@@ -82,6 +83,6 @@ export default function PokerTable({
       <div className="border-t border-td-border/60 bg-td-surface/90 px-4 py-3">
         <p className="text-[12px] leading-relaxed text-td-muted">{scenario.actionHistory}</p>
       </div>
-    </div>
+    </SurfaceCard>
   );
 }

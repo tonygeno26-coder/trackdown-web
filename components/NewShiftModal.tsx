@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { X, Check, Spade, Coffee, Home, Clock } from "lucide-react";
+import { Check, Spade, Coffee, Home, Clock } from "lucide-react";
 import { ShiftType } from "@/lib/types";
 import { useAppSettings } from "@/components/settings/AppSettingsContext";
 import { hourlyRateInputValue } from "@/lib/settings";
+import {
+  DealingBottomSheet,
+} from "@/components/dealing/DealingUi";
+import {
+  ChoiceButton,
+  ChoiceGrid,
+  FormField,
+  CurrencyInput,
+  TextInput,
+  SheetFooter,
+  PrimaryButton,
+  SecondaryButton,
+} from "@/components/ui";
 
 const LAST_TOURNAMENT_RATE_KEY = "trackdown_last_tournament_hourly_rate";
 
@@ -102,142 +115,104 @@ export default function NewShiftModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-[460px] bg-td-surface border border-td-border rounded-t-2xl px-5 pt-5 pb-6 flex flex-col gap-3.5"
-      >
-        <div className="flex justify-between items-center">
-          <h2 className="font-display font-bold text-lg tracking-wide">Start new shift</h2>
-          <button onClick={onCancel} className="text-td-muted hover:text-td-cream p-1 rounded">
-            <X size={18} />
-          </button>
+    <DealingBottomSheet
+      title="Start New Shift"
+      onClose={onCancel}
+      footer={
+        type ? (
+          <SheetFooter>
+            <SecondaryButton type="button" onClick={() => setType(null)}>
+              Back
+            </SecondaryButton>
+            <PrimaryButton type="button" onClick={handleCreate}>
+              <Check size={16} /> Build Shift
+            </PrimaryButton>
+          </SheetFooter>
+        ) : undefined
+      }
+    >
+      {!type ? (
+        <>
+          <p className="-mt-1 text-[14px] text-td-muted">What are you dealing?</p>
+          <ChoiceGrid>
+            <ChoiceButton icon={Spade} onClick={() => selectType("tournament")}>
+              Tournament
+            </ChoiceButton>
+            <ChoiceButton icon={Coffee} onClick={() => selectType("cash")}>
+              Cash Game
+            </ChoiceButton>
+            <ChoiceButton icon={Home} onClick={() => selectType("homegame")}>
+              Home Game
+            </ChoiceButton>
+          </ChoiceGrid>
+        </>
+      ) : (
+        <div className="space-y-4">
+          {type === "tournament" && (
+            <>
+              <p className="text-[14px] text-td-muted">Down length?</p>
+              <div className="grid grid-cols-2 gap-3">
+                {([30, 40] as const).map((len) => (
+                  <ChoiceButton
+                    key={len}
+                    selected={length === len}
+                    icon={Clock}
+                    onClick={() => setLength(len)}
+                  >
+                    {len} min
+                  </ChoiceButton>
+                ))}
+              </div>
+              <FormField label="Hourly rate ($/hour)" hint="Leave blank if unknown">
+                <CurrencyInput
+                  value={hourlyRate}
+                  onChange={setHourlyRate}
+                  placeholder="Leave blank if unknown"
+                />
+              </FormField>
+            </>
+          )}
+
+          {type === "homegame" && (
+            <FormField label="House tax on tips (%)">
+              <div className="flex min-h-[48px] items-center rounded-xl border border-td-border bg-td-bg/80 px-3.5">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="1"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  value={taxPct}
+                  onChange={(e) => setTaxPct(e.target.value)}
+                  className="flex-1 border-none bg-transparent py-3 font-mono text-[15px] font-semibold text-td-cream focus:outline-none"
+                />
+                <span className="font-mono text-td-muted">%</span>
+              </div>
+            </FormField>
+          )}
+
+          <FormField label={type === "tournament" ? "Tournament / room name" : "Room / game name"}>
+            <TextInput
+              placeholder={
+                type === "tournament" ? "e.g. Wynn $200 Deepstack" : "e.g. Bellagio 1/2 NLH"
+              }
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Shift start time">
+            <TextInput
+              type="time"
+              step={1800}
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="font-mono"
+            />
+          </FormField>
         </div>
-
-        {!type ? (
-          <>
-            <p className="text-[13.5px] text-td-muted -mt-1.5">What are you dealing?</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => selectType("tournament")}
-                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
-              >
-                <Spade size={20} />
-                <span>Tournament</span>
-              </button>
-              <button
-                onClick={() => selectType("cash")}
-                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
-              >
-                <Coffee size={20} />
-                <span>Cash Game</span>
-              </button>
-              <button
-                onClick={() => selectType("homegame")}
-                className="flex-1 flex flex-col items-center gap-2 bg-td-surface2 border-[1.5px] border-td-border rounded-xl py-4 px-2 font-semibold text-[12.5px] hover:border-td-gold"
-              >
-                <Home size={20} />
-                <span>Home Game</span>
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {type === "tournament" && (
-              <>
-                <p className="text-[13.5px] text-td-muted -mt-1.5">Down length?</p>
-                <div className="flex gap-2.5">
-                  {[30, 40].map((len) => (
-                    <button
-                      key={len}
-                      onClick={() => setLength(len as 30 | 40)}
-                      className={`flex-1 flex flex-col items-center gap-2 border-[1.5px] rounded-xl py-5 px-2.5 font-semibold text-[13.5px]
-                        ${length === len ? "border-td-gold bg-td-gold/10 text-td-goldsoft" : "border-td-border bg-td-surface2 hover:border-td-gold"}`}
-                    >
-                      <Clock size={20} />
-                      <span>{len} min</span>
-                    </button>
-                  ))}
-                </div>
-
-                <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-                  <span>Hourly rate ($/hour)</span>
-                  <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
-                    <span className="font-mono text-td-muted">$</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      placeholder="Leave blank if unknown"
-                      value={hourlyRate}
-                      onChange={(e) => setHourlyRate(e.target.value)}
-                      className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
-                    />
-                  </div>
-                </label>
-              </>
-            )}
-
-            {type === "homegame" && (
-              <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-                <span>House tax on tips (%)</span>
-                <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="1"
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    value={taxPct}
-                    onChange={(e) => setTaxPct(e.target.value)}
-                    className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
-                  />
-                  <span className="font-mono text-td-muted">%</span>
-                </div>
-              </label>
-            )}
-
-            <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-              <span>{type === "tournament" ? "Tournament / room name" : "Room / game name"}</span>
-              <input
-                type="text"
-                placeholder={type === "tournament" ? "e.g. Wynn $200 Deepstack" : "e.g. Bellagio 1/2 NLH"}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] focus:outline focus:outline-2 focus:outline-td-gold"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-              <span>Shift start time</span>
-              <input
-                type="time"
-                step={1800}
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] font-mono focus:outline focus:outline-2 focus:outline-td-gold"
-              />
-            </label>
-
-            <div className="flex gap-2.5 mt-1.5">
-              <button
-                onClick={() => setType(null)}
-                className="flex-1 rounded-[10px] py-3 font-bold text-sm bg-td-surface2 border border-td-border text-td-cream"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleCreate}
-                className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
-              >
-                <Check size={16} /> Build shift
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+      )}
+    </DealingBottomSheet>
   );
 }

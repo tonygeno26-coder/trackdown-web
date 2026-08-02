@@ -9,8 +9,15 @@ import {
   saveBlackjackRules,
   rulesSummary,
 } from "@/lib/training/blackjack";
-import { PrimaryPlayingButton, TrainHeader } from "@/components/train/TrainingUi";
-import { PlayingCard } from "@/components/playing/PlayingUi";
+import {
+  BottomSheet,
+  SheetFooter,
+  PrimaryButton,
+  SecondaryButton,
+  FormSection,
+  ChoiceButton,
+  ChoiceGrid,
+} from "@/components/ui";
 
 function ToggleRow({
   label,
@@ -32,7 +39,7 @@ function ToggleRow({
             key={String(opt.key)}
             type="button"
             onClick={() => onChange(opt.key)}
-            className={`rounded-lg border px-3 py-2 text-[12px] font-semibold ${
+            className={`min-h-[44px] rounded-lg border px-3 py-2 text-[12px] font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-td-gold/60 ${
               value === opt.key
                 ? "border-td-gold bg-td-gold/10 text-td-goldsoft"
                 : "border-td-border bg-td-surface2 text-td-muted"
@@ -46,15 +53,16 @@ function ToggleRow({
   );
 }
 
-export default function BlackjackSettings({
-  onBack,
+export function BlackjackRulesSheet({
+  onClose,
   onSaved,
 }: {
-  onBack: () => void;
+  onClose: () => void;
   onSaved?: () => void;
 }) {
   const [presetId, setPresetId] = useState<string>("vegas-strip");
   const [rules, setRules] = useState<BlackjackRules>(() => loadBlackjackRules());
+  const [saving, setSaving] = useState(false);
 
   const applyPreset = (preset: BlackjackPreset) => {
     setPresetId(preset.id);
@@ -62,37 +70,47 @@ export default function BlackjackSettings({
   };
 
   const save = () => {
+    if (saving) return;
+    setSaving(true);
     saveBlackjackRules(rules);
     onSaved?.();
-    onBack();
+    onClose();
   };
 
   return (
-    <div className="pb-28">
-      <TrainHeader
-        title="Blackjack Rules"
-        subtitle="Example presets — actual casino rules may vary. Edit any setting."
-        onBack={onBack}
-      />
+    <BottomSheet
+      title="Blackjack Rules"
+      onClose={onClose}
+      footer={
+        <SheetFooter>
+          <SecondaryButton type="button" onClick={onClose} disabled={saving}>
+            Cancel
+          </SecondaryButton>
+          <PrimaryButton type="button" onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Save Rules"}
+          </PrimaryButton>
+        </SheetFooter>
+      }
+    >
+      <p className="text-[12px] text-td-muted">
+        Example presets — actual casino rules may vary. Edit any setting.
+      </p>
 
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      <ChoiceGrid>
         {BLACKJACK_PRESETS.map((preset) => (
-          <button
+          <ChoiceButton
             key={preset.id}
-            type="button"
+            selected={presetId === preset.id}
             onClick={() => applyPreset(preset)}
-            className={`rounded-xl border px-3 py-3 text-left text-[12px] ${
-              presetId === preset.id
-                ? "border-td-gold bg-td-gold/10 text-td-cream"
-                : "border-td-border bg-td-surface2 text-td-muted"
-            }`}
+            className="col-span-1 text-left !items-start !py-3"
           >
-            <span className="block font-semibold">{preset.label}</span>
-          </button>
+            {preset.label}
+          </ChoiceButton>
         ))}
-      </div>
+      </ChoiceGrid>
 
-      <PlayingCard className="mb-4 space-y-5 p-5">
+      <div className="mt-4">
+        <FormSection title="Rule Options">
         <ToggleRow
           label="Number of decks"
           value={rules.decks}
@@ -140,13 +158,21 @@ export default function BlackjackSettings({
           ]}
           onChange={(v) => setRules({ ...rules, resplitAces: v as boolean })}
         />
-      </PlayingCard>
+      </FormSection>
+      </div>
 
-      <p className="mb-4 text-[12px] text-td-muted">{rulesSummary(rules)}</p>
-
-      <PrimaryPlayingButton type="button" onClick={save}>
-        Save Rules
-      </PrimaryPlayingButton>
-    </div>
+      <p className="mt-4 text-[12px] text-td-muted">{rulesSummary(rules)}</p>
+    </BottomSheet>
   );
+}
+
+/** @deprecated Use BlackjackRulesSheet overlay from training home */
+export default function BlackjackSettings({
+  onBack,
+  onSaved,
+}: {
+  onBack: () => void;
+  onSaved?: () => void;
+}) {
+  return <BlackjackRulesSheet onClose={onBack} onSaved={onSaved} />;
 }

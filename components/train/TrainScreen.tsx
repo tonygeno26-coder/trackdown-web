@@ -193,7 +193,6 @@ export default function TrainScreen() {
             setBlackjackMode(mode);
             navigate("blackjack-trainer");
           }}
-          onSettings={() => navigate("blackjack-settings")}
           onProgress={() => navigate("blackjack-progress")}
         />
       );

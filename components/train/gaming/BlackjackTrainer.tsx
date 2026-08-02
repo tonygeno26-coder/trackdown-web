@@ -26,7 +26,14 @@ import {
 import { getAvailableActions, gradeStrategy } from "@/lib/training/blackjack-strategy";
 import BlackjackHandDisplay from "@/components/train/gaming/BlackjackHand";
 import BlackjackResult from "@/components/train/gaming/BlackjackResult";
-import { TrainHeader, TrainQuestionCard, TrainStatsRow } from "@/components/train/TrainingUi";
+import { EmptyState, SecondaryButton } from "@/components/ui";
+import { RotateCcw } from "lucide-react";
+import {
+  DrillScreen,
+  DrillHeader,
+  DrillPromptCard,
+  DrillStatsStrip,
+} from "@/components/train/shared";
 
 export default function BlackjackTrainer({
   mode,
@@ -111,29 +118,33 @@ export default function BlackjackTrainer({
 
   if (mode === "mistakes" && stats.mistakeQueue.length === 0 && !submitted) {
     return (
-      <div className="pb-28">
-        <TrainHeader title="Mistakes Review" onBack={onBack} />
-        <p className="py-12 text-center text-[14px] text-td-muted">
-          No mistakes queued yet. Train in other modes first.
-        </p>
-      </div>
+      <DrillScreen>
+        <DrillHeader title="Mistakes Review" onBack={onBack} />
+        <EmptyState
+          icon={RotateCcw}
+          title="No Mistakes Queued"
+          description="No mistakes queued yet. Train in other modes first."
+        />
+      </DrillScreen>
     );
   }
 
   return (
-    <div className="pb-28">
-      <TrainHeader
+    <DrillScreen>
+      <DrillHeader
         title={BLACKJACK_MODE_LABELS[mode]}
         subtitle={rulesSummary(rules)}
         onBack={onBack}
       />
 
-      <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
-        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
-        <TrainStatsRow label="Overall accuracy" value={`${accuracyPct(stats.total)}%`} />
-        {focusTopic && <TrainStatsRow label="Focus" value={focusTopic.replace(/_/g, " ")} />}
-      </div>
+      <DrillStatsStrip
+        rows={[
+          { label: "Topic accuracy", value: `${adaptiveStats.accuracy}%` },
+          { label: "Confidence", value: String(adaptiveStats.confidence) },
+          { label: "Overall accuracy", value: `${accuracyPct(stats.total)}%` },
+          ...(focusTopic ? [{ label: "Focus", value: focusTopic.replace(/_/g, " ") }] : []),
+        ]}
+      />
 
       {mode === "speed" && speedRemaining != null && !submitted && (
         <p className="mb-3 text-center font-mono text-[13px] text-td-goldsoft">
@@ -144,21 +155,20 @@ export default function BlackjackTrainer({
       <BlackjackHandDisplay playerHand={situation.playerHand} dealerUpcard={situation.dealerUpcard} />
 
       {!submitted ? (
-        <TrainQuestionCard className="mt-4">
-          <p className="text-center text-[15px] font-semibold text-td-cream">What do you do?</p>
+        <DrillPromptCard prompt="What do you do?">
           <div className="grid grid-cols-2 gap-2">
             {available.map((action) => (
-              <button
+              <SecondaryButton
                 key={action}
                 type="button"
                 onClick={() => answer(action)}
-                className="rounded-xl border border-td-border bg-td-surface2 py-4 text-[14px] font-bold uppercase tracking-wide text-td-cream hover:border-td-gold/40"
+                className="min-h-[56px] py-4 text-[14px] font-bold uppercase tracking-wide"
               >
                 {ACTION_LABELS[action]}
-              </button>
+              </SecondaryButton>
             ))}
           </div>
-        </TrainQuestionCard>
+        </DrillPromptCard>
       ) : (
         grade &&
         userChoice && (
@@ -177,6 +187,6 @@ export default function BlackjackTrainer({
           </div>
         )
       )}
-    </div>
+    </DrillScreen>
   );
 }

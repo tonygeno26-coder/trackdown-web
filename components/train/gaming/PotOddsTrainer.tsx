@@ -12,15 +12,16 @@ import {
   recordPotOddsResult,
 } from "@/lib/training/progress";
 import { PotOddsQuestion } from "@/lib/training/types";
+import { PrimaryButton } from "@/components/ui";
 import {
-  PrimaryPlayingButton,
-  TrainFeedback,
-  TrainHeader,
-  TrainNumericInput,
-  TrainQuestionCard,
-  TrainStatsRow,
-  TrainStickyFooter,
-} from "@/components/train/TrainingUi";
+  DrillScreen,
+  DrillHeader,
+  DrillPromptCard,
+  DrillAnswerInput,
+  DrillResultCard,
+  DrillStatsStrip,
+  DrillNavigation,
+} from "@/components/train/shared";
 
 export default function PotOddsTrainer({
   onBack,
@@ -74,21 +75,19 @@ export default function PotOddsTrainer({
   };
 
   return (
-    <div className="pb-28">
-      <TrainHeader title="Pot Odds" subtitle="Adaptive bet sizing and required equity drills." onBack={onBack} />
+    <DrillScreen>
+      <DrillHeader title="Pot Odds" subtitle="Adaptive bet sizing and required equity drills." onBack={onBack} />
 
-      <div className="mb-4 space-y-2 rounded-xl border border-td-border/60 bg-td-surface2/40 p-4">
-        <TrainStatsRow label="Topic accuracy" value={`${adaptiveStats.accuracy}%`} />
-        <TrainStatsRow label="Confidence" value={String(adaptiveStats.confidence)} />
-        <TrainStatsRow label="Streak" value={String(adaptiveStats.currentStreak)} />
-        <TrainStatsRow label="Difficulty" value={difficultyForTopic(topic)} />
-      </div>
+      <DrillStatsStrip
+        rows={[
+          { label: "Topic accuracy", value: `${adaptiveStats.accuracy}%` },
+          { label: "Confidence", value: String(adaptiveStats.confidence) },
+          { label: "Streak", value: String(adaptiveStats.currentStreak) },
+          { label: "Difficulty", value: difficultyForTopic(topic) },
+        ]}
+      />
 
-      <TrainQuestionCard className="mt-4">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-td-muted">
-          {question.difficulty}
-        </p>
-        <p className="text-[16px] font-semibold leading-snug text-td-cream">{question.prompt}</p>
+      <DrillPromptCard meta={question.difficulty} prompt={question.prompt}>
         <div className="grid grid-cols-2 gap-3 text-[13px]">
           <div>
             <p className="text-td-muted">Pot before bet</p>
@@ -101,14 +100,14 @@ export default function PotOddsTrainer({
         </div>
 
         {!submitted ? (
-          <TrainNumericInput
+          <DrillAnswerInput
             value={equityAnswer}
             onChange={setEquityAnswer}
             label="Required equity (%)"
             prefix=""
           />
         ) : (
-          <TrainFeedback correct={correct} title={correct ? "Correct" : "Incorrect"}>
+          <DrillResultCard correct={correct} title={correct ? "Correct" : "Incorrect"}>
             <p>
               Required equity:{" "}
               <span className="font-mono font-bold text-td-goldsoft">
@@ -124,21 +123,21 @@ export default function PotOddsTrainer({
               ))}
             </div>
             <p className="mt-2">{question.explanation}</p>
-          </TrainFeedback>
+          </DrillResultCard>
         )}
-      </TrainQuestionCard>
+      </DrillPromptCard>
 
-      <TrainStickyFooter>
+      <DrillNavigation>
         {!submitted ? (
-          <PrimaryPlayingButton type="button" onClick={submit} disabled={!equityAnswer.trim()}>
+          <PrimaryButton type="button" onClick={submit} disabled={!equityAnswer.trim()}>
             Submit Answer
-          </PrimaryPlayingButton>
+          </PrimaryButton>
         ) : (
-          <PrimaryPlayingButton type="button" onClick={next}>
+          <PrimaryButton type="button" onClick={next}>
             Next Question
-          </PrimaryPlayingButton>
+          </PrimaryButton>
         )}
-      </TrainStickyFooter>
-    </div>
+      </DrillNavigation>
+    </DrillScreen>
   );
 }
