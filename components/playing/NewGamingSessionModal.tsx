@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Spade, Dice5, CircleDot, Trophy, MoreHorizontal } from "lucide-react";
 import { PlayingSessionType } from "@/lib/types";
-import { GamingCategory } from "@/lib/gaming";
+import { GamingCategory, TABLE_GAME_OPTIONS } from "@/lib/gaming";
 import { currentTimeLocal, timeLocalToISO } from "@/lib/playing";
+import { tableMinimumInputValue } from "@/lib/settings";
+import { useAppSettings } from "@/components/settings/AppSettingsContext";
 import {
   PlayingBottomSheet,
   PlayingField,
@@ -26,19 +28,7 @@ const POKER_TYPES: { key: PlayingSessionType; label: string }[] = [
   { key: "tournament", label: "Tournament" },
 ];
 
-const TABLE_GAMES = [
-  "Blackjack",
-  "Craps",
-  "Baccarat",
-  "Roulette",
-  "Pai Gow",
-  "Ultimate Texas Hold'em",
-  "Three Card Poker",
-  "Mississippi Stud",
-  "Let It Ride",
-  "Casino War",
-  "Other",
-];
+const TABLE_GAMES = [...TABLE_GAME_OPTIONS];
 
 type Step = "category" | "poker_type" | "table_game" | "form";
 
@@ -60,6 +50,8 @@ export default function NewGamingSessionModal({
   }) => void;
   saving: boolean;
 }) {
+  const { settings } = useAppSettings();
+  const appliedFormDefaults = useRef(false);
   const [step, setStep] = useState<Step>("category");
   const [category, setCategory] = useState<GamingCategory | null>(null);
   const [sessionType, setSessionType] = useState<PlayingSessionType>("cash");
@@ -70,6 +62,20 @@ export default function NewGamingSessionModal({
   const [startTime, setStartTime] = useState(currentTimeLocal());
   const [initialBuyIn, setInitialBuyIn] = useState("");
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    if (step !== "form" || !settings || appliedFormDefaults.current) return;
+    appliedFormDefaults.current = true;
+    if (settings.default_location) setLocation(settings.default_location);
+    if (category === "poker") {
+      if (settings.default_poker_game) setGame(settings.default_poker_game);
+      if (settings.default_poker_stakes) setStakes(settings.default_poker_stakes);
+    } else if (category === "table_games") {
+      if (settings.default_table_game) setGame(settings.default_table_game);
+      const min = tableMinimumInputValue(settings.default_table_minimum);
+      if (min) setStakes(min);
+    }
+  }, [step, category, settings]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

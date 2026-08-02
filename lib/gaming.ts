@@ -3,6 +3,20 @@ import { netResult } from "./playing";
 
 export type GamingCategory = "poker" | "table_games" | "slots" | "sports_betting" | "other";
 
+export const TABLE_GAME_OPTIONS = [
+  "Blackjack",
+  "Craps",
+  "Baccarat",
+  "Roulette",
+  "Pai Gow",
+  "Ultimate Texas Hold'em",
+  "Three Card Poker",
+  "Mississippi Stud",
+  "Let It Ride",
+  "Casino War",
+  "Other",
+] as const;
+
 export type GamingHistoryFilter =
   | "all"
   | "poker"

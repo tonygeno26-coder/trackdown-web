@@ -9,8 +9,10 @@ import HomeDashboard from "@/components/home/HomeDashboard";
 import StatsScreen from "@/components/stats/StatsScreen";
 import HistoryScreen from "@/components/history/HistoryScreen";
 import SettingsScreen from "@/components/settings/SettingsScreen";
+import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
+import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
 
-export default function Home() {
+function TrackdownApp() {
   const [shifts, setShifts] = useState<Shift[] | null>(null);
   const [playingSessions, setPlayingSessions] = useState<PlayingSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -82,10 +84,27 @@ export default function Home() {
             setError={setError}
           />
         )}
-        {tab === "settings" && <SettingsScreen />}
+        {tab === "settings" && (
+          <SettingsScreen
+            currentTab={tab}
+            shifts={shifts}
+            playingSessions={playingSessions}
+            onReloadData={loadData}
+          />
+        )}
       </main>
 
       <BottomNav active={tab} onChange={setTab} />
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <AppSettingsProvider>
+      <DeveloperPreviewProvider>
+        <TrackdownApp />
+      </DeveloperPreviewProvider>
+    </AppSettingsProvider>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Check, Spade, Coffee, Home, Clock } from "lucide-react";
 import { ShiftType } from "@/lib/types";
+import { useAppSettings } from "@/components/settings/AppSettingsContext";
+import { hourlyRateInputValue } from "@/lib/settings";
 
 const LAST_TOURNAMENT_RATE_KEY = "trackdown_last_tournament_hourly_rate";
 
@@ -36,12 +38,30 @@ export default function NewShiftModal({
     hourlyRate: number | null
   ) => void;
 }) {
+  const { settings } = useAppSettings();
+  const appliedDefaults = useRef(false);
   const [type, setType] = useState<ShiftType | null>(null);
   const [length, setLength] = useState<30 | 40>(30);
   const [startTime, setStartTime] = useState(nearestHalfHour());
   const [title, setTitle] = useState("");
   const [taxPct, setTaxPct] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
+
+  useEffect(() => {
+    if (!settings || appliedDefaults.current) return;
+    appliedDefaults.current = true;
+    if (settings.default_dealer_shift_type) {
+      setType(settings.default_dealer_shift_type);
+      if (settings.default_dealer_shift_type === "tournament") {
+        if (settings.default_tournament_down_length) {
+          setLength(settings.default_tournament_down_length);
+        }
+        const rate =
+          hourlyRateInputValue(settings.default_tournament_hourly_rate) || readLastHourlyRate();
+        if (rate) setHourlyRate(rate);
+      }
+    }
+  }, [settings]);
 
   const buildShiftStartISO = (): string => {
     const [hh, mm] = startTime.split(":").map(Number);
@@ -52,7 +72,13 @@ export default function NewShiftModal({
 
   const selectType = (next: ShiftType) => {
     setType(next);
-    if (next === "tournament") setHourlyRate(readLastHourlyRate());
+    if (next === "tournament") {
+      const settingsRate = hourlyRateInputValue(settings?.default_tournament_hourly_rate);
+      setHourlyRate(settingsRate || readLastHourlyRate());
+      if (settings?.default_tournament_down_length) {
+        setLength(settings.default_tournament_down_length);
+      }
+    }
   };
 
   const handleCreate = () => {

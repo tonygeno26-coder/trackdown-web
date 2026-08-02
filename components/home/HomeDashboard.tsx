@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
 import { GamingCategory } from "@/lib/gaming";
+import { createPreviewDealerShift, createPreviewGamingSession } from "@/lib/preview-data";
 import EmptyHomeState from "@/components/home/EmptyHomeState";
 import DealerCockpit from "@/components/home/DealerCockpit";
 import GamingCockpit from "@/components/home/GamingCockpit";
@@ -20,6 +21,8 @@ import EndPlayingSessionModal from "@/components/playing/EndPlayingSessionModal"
 import AddNoteModal from "@/components/playing/AddNoteModal";
 import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
 import { PlayingShell } from "@/components/playing/PlayingUi";
+import DeveloperPreviewBanner from "@/components/dev/DeveloperPreviewBanner";
+import { useDeveloperPreview } from "@/components/dev/DeveloperPreviewProvider";
 
 export default function HomeDashboard({
   shifts,
@@ -34,9 +37,32 @@ export default function HomeDashboard({
   onSessionsChange: (next: PlayingSession[]) => void;
   setError: (msg: string | null) => void;
 }) {
-  const activeShift = shifts.find((s) => s.status === "active") || null;
-  const activeSession = playingSessions.find((s) => s.status === "active") || null;
-  const hasConflict = !!activeShift && !!activeSession;
+  const { previewMode, isPreviewActive } = useDeveloperPreview();
+
+  const realActiveShift = shifts.find((s) => s.status === "active" && !s.is_demo) || null;
+  const realActiveSession =
+    playingSessions.find((s) => s.status === "active" && !s.is_demo) || null;
+
+  const previewShift = previewMode === "dealer" ? createPreviewDealerShift() : null;
+  const previewSession = previewMode === "gaming" ? createPreviewGamingSession() : null;
+
+  const activeShift = isPreviewActive
+    ? previewMode === "dealer"
+      ? previewShift
+      : previewMode === "empty"
+        ? null
+        : realActiveShift
+    : realActiveShift;
+
+  const activeSession = isPreviewActive
+    ? previewMode === "gaming"
+      ? previewSession
+      : previewMode === "empty"
+        ? null
+        : realActiveSession
+    : realActiveSession;
+
+  const hasConflict = !isPreviewActive && !!realActiveShift && !!realActiveSession;
 
   const [newShiftOpen, setNewShiftOpen] = useState(false);
   const [newGamingOpen, setNewGamingOpen] = useState(false);
@@ -56,17 +82,28 @@ export default function HomeDashboard({
       : shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
   const shiftDoneCount = (shift: Shift) => shift.blocks.filter((b) => b.status === "done").length;
 
+  const guardPreview = () => {
+    if (isPreviewActive) {
+      setError("Clear Developer Preview before performing real actions.");
+      return false;
+    }
+    return true;
+  };
+
   const guardStart = () => {
-    if (activeShift) {
+    if (!guardPreview()) return false;
+    if (realActiveShift) {
       setError("End your current dealer shift before starting a new activity.");
       return false;
     }
-    if (activeSession) {
+    if (realActiveSession) {
       setError("End your current gaming session before starting a new activity.");
       return false;
     }
     return true;
   };
+
+  const guardMutation = () => guardPreview();
 
   const createShift = async (
     type: ShiftType,
@@ -136,7 +173,7 @@ export default function HomeDashboard({
   };
 
   const saveBlock = async (updatedBlock: DownBlock) => {
-    if (!blockSheet) return;
+    if (!guardMutation() || !blockSheet) return;
     const shift = blockSheet.shift;
     const nextBlocks = shift.blocks.map((b) => (b.id === updatedBlock.id ? updatedBlock : b));
     const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", shift.id);
@@ -149,7 +186,7 @@ export default function HomeDashboard({
   };
 
   const quickBlockUpdate = async (block: DownBlock, update: Partial<DownBlock>) => {
-    if (!activeShift) return;
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
     const nextBlock = { ...block, ...update };
     const nextBlocks = activeShift.blocks.map((b) => (b.id === block.id ? nextBlock : b));
     const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
@@ -164,7 +201,7 @@ export default function HomeDashboard({
     settledStatus: "yes" | "no" | "partial" | null,
     settledAmount: number | null
   ) => {
-    if (!activeShift) return;
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
     const endedAt = new Date().toISOString();
     const { error: err } = await supabase
       .from("shifts")
@@ -190,7 +227,7 @@ export default function HomeDashboard({
   };
 
   const extendShift = async (additionalMinutes: number) => {
-    if (!activeShift) return;
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
     const nextBlocks = extendBlocks(activeShift.blocks, activeShift.down_length, additionalMinutes);
     const { error: err } = await supabase.from("shifts").update({ blocks: nextBlocks }).eq("id", activeShift.id);
     if (err) {
@@ -201,7 +238,7 @@ export default function HomeDashboard({
   };
 
   const logLumpSum = async (amount: number) => {
-    if (!activeShift) return;
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
     const { error: err } = await supabase
       .from("shifts")
       .update({ is_lump_sum: true, lump_sum_tips: amount })
@@ -217,7 +254,7 @@ export default function HomeDashboard({
   };
 
   const addBuyIn = async (amount: number) => {
-    if (!activeSession) return;
+    if (!guardMutation() || !activeSession || activeSession.id.startsWith("preview-")) return;
     setSaving(true);
     const nextAdditional = (activeSession.additional_buy_ins || 0) + amount;
     const { error: err } = await supabase
@@ -245,7 +282,7 @@ export default function HomeDashboard({
     start_time: string;
     initial_buy_in: number;
   }) => {
-    if (!activeSession) return;
+    if (!guardMutation() || !activeSession || activeSession.id.startsWith("preview-")) return;
     setSaving(true);
     const category = activeSession.title;
     const { error: err } = await supabase
@@ -264,7 +301,7 @@ export default function HomeDashboard({
   };
 
   const saveNote = async (notes: string) => {
-    if (!activeSession) return;
+    if (!guardMutation() || !activeSession || activeSession.id.startsWith("preview-")) return;
     setSaving(true);
     const { error: err } = await supabase
       .from("playing_sessions")
@@ -280,7 +317,7 @@ export default function HomeDashboard({
   };
 
   const endSession = async (data: { cash_out: number; expenses: number; notes: string }) => {
-    if (!activeSession) return;
+    if (!guardMutation() || !activeSession || activeSession.id.startsWith("preview-")) return;
     setSaving(true);
     const endedAt = new Date().toISOString();
     const { data: row, error: err } = await supabase
@@ -309,6 +346,8 @@ export default function HomeDashboard({
 
   return (
     <PlayingShell>
+      <DeveloperPreviewBanner />
+
       {hasConflict && (
         <div className="mb-4 rounded-xl border border-td-red/50 bg-td-red/10 px-4 py-3 text-center text-[13px] text-red-300">
           Both a dealer shift and gaming session are active. End one to continue normally.

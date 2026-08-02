@@ -30,6 +30,7 @@ export interface Shift {
   status: "active" | "completed";
   blocks: DownBlock[];
   created_at: string;
+  is_demo?: boolean;
 }
 
 export type PlayingSessionType = "cash" | "tournament";
@@ -51,4 +52,5 @@ export interface PlayingSession {
   expenses: number;
   notes: string;
   created_at: string;
+  is_demo?: boolean;
 }

@@ -76,3 +76,40 @@ create policy "Allow all for anon"
   for all
   using (true)
   with check (true);
+
+-- App settings (single-user defaults)
+create table if not exists app_settings (
+  id uuid primary key default gen_random_uuid(),
+  default_location text not null default '',
+  default_poker_game text not null default '',
+  default_poker_stakes text not null default '',
+  default_table_game text not null default '',
+  default_table_minimum numeric,
+  default_tournament_hourly_rate numeric,
+  default_tournament_down_length int
+    check (default_tournament_down_length in (30, 40)),
+  default_dealer_shift_type text
+    check (
+      default_dealer_shift_type in (
+        'tournament',
+        'cash',
+        'homegame'
+      )
+    ),
+  currency_code text not null default 'USD',
+  developer_mode boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table app_settings enable row level security;
+
+drop policy if exists "Allow all for anon" on app_settings;
+create policy "Allow all for anon"
+  on app_settings
+  for all
+  using (true)
+  with check (true);
+
+alter table shifts add column if not exists is_demo boolean not null default false;
+alter table playing_sessions add column if not exists is_demo boolean not null default false;
