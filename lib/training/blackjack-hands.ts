@@ -8,7 +8,7 @@ import {
   HandCategory,
   cardValue,
 } from "./blackjack";
-import { situationKey } from "./blackjack-strategy";
+import { getStrategyRecommendation, situationKey } from "./blackjack-strategy";
 
 const RANKS: CardRank[] = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
@@ -160,4 +160,60 @@ export function handCategoryLabel(category: HandCategory): string {
 
 export function formatHandCards(cards: BlackjackCard[]): string {
   return cards.map((c) => c.rank).join(" + ");
+}
+
+/** Dev-only checks that a situation is internally consistent before rendering. */
+export function validateBlackjackScenario(situation: BlackjackSituation, rules?: BlackjackRules): void {
+  if (process.env.NODE_ENV === "production") return;
+
+  const { playerHand } = situation;
+  const { cards, category, total, soft, pairRank } = playerHand;
+  const computed = handTotal(cards);
+  const prefix = "[BlackjackTrainer] Scenario validation failed:";
+
+  if (computed.total !== total) {
+    console.warn(prefix, "displayed total does not match cards", {
+      cards: formatHandCards(cards),
+      displayed: total,
+      computed: computed.total,
+    });
+  }
+
+  if (category === "pair") {
+    if (cards.length !== 2) {
+      console.warn(prefix, "pair must have exactly two cards", cards);
+    } else if (cardValue(cards[0].rank) !== cardValue(cards[1].rank)) {
+      console.warn(prefix, "pair ranks are not identical", cards);
+    }
+  }
+
+  if (category === "soft") {
+    if (!computed.soft) {
+      console.warn(prefix, "soft hand but ace is not counted as 11", cards);
+    }
+    if (!soft) {
+      console.warn(prefix, "soft category but soft flag is false", cards);
+    }
+  }
+
+  if (category === "hard" && soft) {
+    console.warn(prefix, "hard category but hand is labeled soft", cards);
+  }
+
+  if (rules) {
+    const strategy = getStrategyRecommendation(situation, rules);
+    const handDesc =
+      category === "pair"
+        ? `Pair of ${pairRank}s`
+        : soft
+          ? `Soft ${total}`
+          : `Hard ${total}`;
+    if (!strategy.explanation.includes(handDesc)) {
+      console.warn(prefix, "explanation does not reference this hand", {
+        handDesc,
+        explanation: strategy.explanation,
+        cards: formatHandCards(cards),
+      });
+    }
+  }
 }

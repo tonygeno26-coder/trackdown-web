@@ -25,7 +25,7 @@ export default function BlackjackHandDisplay({
         <div className="mt-3 flex justify-center gap-3">
           {playerHand.cards.map((c, i) => (
             <div
-              key={i}
+              key={`${c.rank}-${i}`}
               className="flex h-24 w-[4.5rem] items-center justify-center rounded-xl border-2 border-td-gold/30 bg-td-bg font-display text-2xl font-bold text-td-cream"
             >
               {cardDisplay(c.rank)}
