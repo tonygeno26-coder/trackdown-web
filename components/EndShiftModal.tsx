@@ -23,7 +23,7 @@ export default function EndShiftModal({
   shift: Shift;
   grossTotal: number;
   onCancel: () => void;
-  onConfirm: (settledStatus: "yes" | "no" | "partial" | null, settledAmount: number | null) => void;
+  onConfirm: (settledStatus: "yes" | "no" | "partial" | null, settledAmount: number | null) => boolean | Promise<boolean>;
 }) {
   const isHomegame = shift.type === "homegame";
   const netOwed = isHomegame && shift.house_tax_pct > 0 ? netTips(grossTotal, shift.house_tax_pct) : grossTotal;
@@ -45,9 +45,10 @@ export default function EndShiftModal({
             <DestructiveButton
               type="button"
               disabled={confirming}
-              onClick={() => {
+              onClick={async () => {
                 setConfirming(true);
-                onConfirm(null, null);
+                const ok = await Promise.resolve(onConfirm(null, null));
+                if (!ok) setConfirming(false);
               }}
             >
               {confirming ? "Ending…" : "End Shift"}
@@ -76,9 +77,12 @@ export default function EndShiftModal({
           <PrimaryButton
             type="button"
             disabled={!canConfirm || confirming}
-            onClick={() => {
+            onClick={async () => {
               setConfirming(true);
-              onConfirm(choice, choice === "partial" ? parseFloat(partialAmount) || 0 : null);
+              const ok = await Promise.resolve(
+                onConfirm(choice, choice === "partial" ? parseFloat(partialAmount) || 0 : null)
+              );
+              if (!ok) setConfirming(false);
             }}
           >
             {confirming ? "Confirming…" : "Confirm & End Shift"}

@@ -74,8 +74,8 @@ export default function DealingSection({
   const endShift = async (
     settledStatus: "yes" | "no" | "partial" | null,
     settledAmount: number | null
-  ) => {
-    if (!activeShift) return;
+  ): Promise<boolean> => {
+    if (!activeShift) return false;
     const endedAt = new Date().toISOString();
     const { error: err } = await supabase
       .from("shifts")
@@ -88,7 +88,7 @@ export default function DealingSection({
       .eq("id", activeShift.id);
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
     onShiftsChange(
       shifts.map((s) =>
@@ -98,6 +98,7 @@ export default function DealingSection({
       )
     );
     setConfirmEndShift(false);
+    return true;
   };
 
   const extendShift = async (additionalMinutes: number) => {
