@@ -1,0 +1,73 @@
+"use client";
+
+import { useMemo } from "react";
+import { DEALER_TIPS } from "@/lib/training/dealer-tips";
+import {
+  accuracyPct,
+  loadTrainingProgress,
+  scenarioAcceptableAccuracy,
+  scenarioPreferredAccuracy,
+} from "@/lib/training/progress";
+import { TrainHeader, TrainStatsRow } from "@/components/train/TrainingUi";
+import { PlayingCard } from "@/components/playing/PlayingUi";
+
+export default function TrainingProgress({ onBack }: { onBack: () => void }) {
+  const progress = useMemo(() => loadTrainingProgress(), []);
+
+  const bestCalcStreak = Math.max(
+    progress.dealer.potCalc.bestStreak,
+    progress.dealer.ploCalc.bestStreak
+  );
+  const bestPokerStreak = Math.max(
+    progress.poker.scenarios.bestStreak,
+    progress.poker.potOdds.bestStreak
+  );
+
+  return (
+    <div className="pb-28">
+      <TrainHeader
+        title="Progress"
+        subtitle="Training stats are stored locally and never affect financial Stats."
+        onBack={onBack}
+      />
+
+      <PlayingCard className="mb-4 space-y-2 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Dealer</p>
+        <TrainStatsRow
+          label="Lessons completed"
+          value={`${progress.dealer.completedTipIds.length} / ${DEALER_TIPS.length}`}
+        />
+        <TrainStatsRow
+          label="Pot calculation accuracy"
+          value={`${accuracyPct(progress.dealer.potCalc)}%`}
+        />
+        <TrainStatsRow
+          label="PLO calculation accuracy"
+          value={`${accuracyPct(progress.dealer.ploCalc)}%`}
+        />
+        <TrainStatsRow label="Best calculation streak" value={String(bestCalcStreak)} />
+      </PlayingCard>
+
+      <PlayingCard className="space-y-2 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Poker</p>
+        <TrainStatsRow
+          label="Scenarios completed"
+          value={String(progress.poker.scenarios.attempted)}
+        />
+        <TrainStatsRow
+          label="Preferred-action accuracy"
+          value={`${scenarioPreferredAccuracy(progress.poker.scenarios)}%`}
+        />
+        <TrainStatsRow
+          label="Acceptable-action accuracy"
+          value={`${scenarioAcceptableAccuracy(progress.poker.scenarios)}%`}
+        />
+        <TrainStatsRow
+          label="Pot-odds accuracy"
+          value={`${accuracyPct(progress.poker.potOdds)}%`}
+        />
+        <TrainStatsRow label="Best poker-training streak" value={String(bestPokerStreak)} />
+      </PlayingCard>
+    </div>
+  );
+}

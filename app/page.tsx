@@ -9,6 +9,7 @@ import HomeDashboard from "@/components/home/HomeDashboard";
 import StatsScreen from "@/components/stats/StatsScreen";
 import HistoryScreen from "@/components/history/HistoryScreen";
 import SettingsScreen from "@/components/settings/SettingsScreen";
+import TrainScreen from "@/components/train/TrainScreen";
 import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
 import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
 
@@ -75,6 +76,7 @@ function TrackdownApp() {
           />
         )}
         {tab === "stats" && <StatsScreen shifts={shifts} playingSessions={playingSessions} />}
+        {tab === "train" && <TrainScreen />}
         {tab === "history" && (
           <HistoryScreen
             shifts={shifts}
