@@ -1,4 +1,4 @@
-import { PlayingSession } from "./types";
+import { PlayingSession, Shift } from "./types";
 
 export type PlayingDateRange = "week" | "month" | "year" | "all";
 export type PlayingHistoryFilter = "all" | "cash" | "tournament" | "wins" | "losses";
@@ -85,10 +85,9 @@ export function netResultColorClass(n: number | null): string {
   return n > 0 ? "text-td-goldsoft" : "text-red-300";
 }
 
-export function sessionInDateRange(session: PlayingSession, range: PlayingDateRange): boolean {
+function startInDateRange(startTime: string, range: PlayingDateRange, now: Date = new Date()): boolean {
   if (range === "all") return true;
-  const start = new Date(session.start_time);
-  const now = new Date();
+  const start = new Date(startTime);
   if (range === "week") {
     const weekAgo = new Date(now);
     weekAgo.setDate(weekAgo.getDate() - 7);
@@ -101,6 +100,22 @@ export function sessionInDateRange(session: PlayingSession, range: PlayingDateRa
     return start.getFullYear() === now.getFullYear();
   }
   return true;
+}
+
+export function sessionInDateRange(
+  session: PlayingSession,
+  range: PlayingDateRange,
+  now: Date = new Date()
+): boolean {
+  return startInDateRange(session.start_time, range, now);
+}
+
+export function shiftInDateRange(
+  shift: Pick<Shift, "start_time">,
+  range: PlayingDateRange,
+  now: Date = new Date()
+): boolean {
+  return startInDateRange(shift.start_time, range, now);
 }
 
 export function computePlayingStats(sessions: PlayingSession[]): PlayingStatsSummary {

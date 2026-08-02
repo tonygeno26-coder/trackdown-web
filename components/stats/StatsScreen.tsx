@@ -8,6 +8,7 @@ import {
   formatSignedMoney,
   netResultColorClass,
   sessionInDateRange,
+  shiftInDateRange,
   PlayingDateRange,
   netResult,
 } from "@/lib/playing";
@@ -30,7 +31,8 @@ export default function StatsScreen({
   const completedShifts = shifts.filter((s) => s.status === "completed");
   const completedSessions = playingSessions.filter((s) => s.status === "completed");
 
-  const dealingStats = computeDealingStats(completedShifts);
+  const dealingFiltered = completedShifts.filter((s) => shiftInDateRange(s, dateRange));
+  const dealingStats = computeDealingStats(dealingFiltered);
   const gamingFiltered = completedSessions.filter((s) => sessionInDateRange(s, dateRange));
   const gamingStats = computePlayingStats(gamingFiltered);
 
