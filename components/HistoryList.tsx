@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
 import { fmtMoney, fmtDateHeader, fmtTime } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
+
+type TypeFilter = "all" | "tournament" | "cash" | "homegame";
+type SettledFilter = "all" | "settled" | "unsettled";
 
 export default function HistoryList({
   shifts,
@@ -16,20 +19,78 @@ export default function HistoryList({
   onDeleteShift: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [settledFilter, setSettledFilter] = useState<SettledFilter>("all");
 
-  if (shifts.length === 0) {
-    return (
-      <div className="text-center py-10 px-4 text-td-muted text-[13.5px]">
-        <p>No completed shifts yet.</p>
-      </div>
-    );
-  }
+  const filtered = useMemo(() => {
+    return shifts.filter((s) => {
+      if (typeFilter !== "all" && s.type !== typeFilter) return false;
+      if (typeFilter === "homegame" && settledFilter !== "all") {
+        const isSettled = s.settled_status === "yes";
+        if (settledFilter === "settled" && !isSettled) return false;
+        if (settledFilter === "unsettled" && isSettled) return false;
+      }
+      return true;
+    });
+  }, [shifts, typeFilter, settledFilter]);
+
+  const typeChips: { key: TypeFilter; label: string }[] = [
+    { key: "all", label: "All" },
+    { key: "tournament", label: "Tournament" },
+    { key: "cash", label: "Cash" },
+    { key: "homegame", label: "Home Game" },
+  ];
 
   return (
     <div>
-      {shifts.map((shift) => {
+      <div className="flex gap-1.5 flex-wrap mb-3">
+        {typeChips.map((chip) => (
+          <button
+            key={chip.key}
+            onClick={() => {
+              setTypeFilter(chip.key);
+              setSettledFilter("all");
+            }}
+            className={`text-[12.5px] font-semibold px-3 py-1.5 rounded-full border ${
+              typeFilter === chip.key
+                ? "bg-td-gold border-td-gold text-[#1a1305]"
+                : "bg-transparent border-td-border text-td-muted hover:border-td-gold"
+            }`}
+          >
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
+      {typeFilter === "homegame" && (
+        <div className="flex gap-1.5 mb-3">
+          {(["all", "settled", "unsettled"] as SettledFilter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setSettledFilter(f)}
+              className={`text-[11.5px] font-semibold px-2.5 py-1 rounded-full border capitalize ${
+                settledFilter === f
+                  ? "bg-td-surface2 border-td-gold text-td-goldsoft"
+                  : "bg-transparent border-td-border text-td-muted hover:border-td-gold"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {filtered.length === 0 && (
+        <div className="text-center py-10 px-4 text-td-muted text-[13.5px]">
+          <p>No shifts match this filter.</p>
+        </div>
+      )}
+
+      {filtered.map((shift) => {
         const isOpen = !!expanded[shift.id];
-        const total = shift.blocks.reduce((s, b) => s + (b.status === "done" ? b.tips : 0), 0);
+        const total = shift.is_lump_sum
+          ? shift.lump_sum_tips || 0
+          : shift.blocks.reduce((s, b) => s + (b.status === "done" ? b.tips : 0), 0);
         const done = shift.blocks.filter((b) => b.status === "done").length;
         const doneBlocks = shift.blocks.filter((b) => b.status === "done");
 
@@ -42,18 +103,28 @@ export default function HistoryList({
               {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
               <div className="flex flex-col items-start flex-1">
                 <span className="text-sm font-semibold">
-                  {shift.title ? `${shift.title} · ` : ""}{fmtDateHeader(shift.start_time)} · {shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash" : "Home Game"}
+                  {shift.title ? `${shift.title} · ` : ""}
+                  {fmtDateHeader(shift.start_time)} ·{" "}
+                  {shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash" : "Home Game"}
                 </span>
                 <span className="text-[11.5px] text-td-muted">
-                  {fmtTime(shift.start_time)} · {shift.down_length}m downs · {done}/{shift.blocks.length} logged
+                  {fmtTime(shift.start_time)} · {shift.down_length}m downs ·{" "}
+                  {shift.is_lump_sum ? "logged as one total" : `${done}/${shift.blocks.length} logged`}
                 </span>
                 {shift.type === "homegame" && shift.settled_status && (
-                  <span className={`text-[11px] font-semibold mt-0.5 ${
-                    shift.settled_status === "yes" ? "text-td-gold" : shift.settled_status === "no" ? "text-red-300" : "text-td-muted"
-                  }`}>
+                  <span
+                    className={`text-[11px] font-semibold mt-0.5 ${
+                      shift.settled_status === "yes"
+                        ? "text-td-gold"
+                        : shift.settled_status === "no"
+                        ? "text-red-300"
+                        : "text-td-muted"
+                    }`}
+                  >
                     {shift.settled_status === "yes" && "Settled in full"}
                     {shift.settled_status === "no" && "Not settled"}
-                    {shift.settled_status === "partial" && `Partially settled · ${fmtMoney(shift.settled_amount || 0)} paid`}
+                    {shift.settled_status === "partial" &&
+                      `Partially settled · ${fmtMoney(shift.settled_amount || 0)} paid`}
                   </span>
                 )}
               </div>
@@ -64,11 +135,17 @@ export default function HistoryList({
 
             {isOpen && (
               <div className="flex flex-col gap-2 my-2.5">
-                {doneBlocks.map((b) => (
-                  <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(shift, b)} />
-                ))}
-                {doneBlocks.length === 0 && (
+                {!shift.is_lump_sum &&
+                  doneBlocks.map((b) => (
+                    <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(shift, b)} />
+                  ))}
+                {!shift.is_lump_sum && doneBlocks.length === 0 && (
                   <p className="text-[12.5px] text-td-muted py-2 px-1">No downs logged this shift.</p>
+                )}
+                {shift.is_lump_sum && (
+                  <p className="text-[12.5px] text-td-muted py-2 px-1">
+                    This shift was logged as one total rather than per-down.
+                  </p>
                 )}
                 <button
                   onClick={() => onDeleteShift(shift.id)}

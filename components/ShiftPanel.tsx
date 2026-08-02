@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, PenLine } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
 import { fmtMoney, netTips } from "@/lib/blocks";
 import BlockRow from "./BlockRow";
@@ -13,6 +13,7 @@ export default function ShiftPanel({
   onBlockTap,
   onEndShift,
   onExtend,
+  onLogLumpSum,
 }: {
   shift: Shift;
   total: number;
@@ -20,11 +21,12 @@ export default function ShiftPanel({
   onBlockTap: (b: DownBlock) => void;
   onEndShift: () => void;
   onExtend: (additionalMinutes: number) => void;
+  onLogLumpSum: () => void;
 }) {
-  const [extendOpen, setExtendOpen] = useState(false);
   const progress = doneCount / shift.blocks.length;
   const isTournament = shift.type === "tournament";
   const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
+  const [extendOpen, setExtendOpen] = useState(false);
   const typeLabel =
     shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game";
 
@@ -50,9 +52,7 @@ export default function ShiftPanel({
             <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
               {doneCount}
             </span>
-            <span className="text-[12.5px] text-td-muted">
-              of {shift.blocks.length} downs logged
-            </span>
+            <span className="text-[12.5px] text-td-muted">of {shift.blocks.length} downs logged</span>
           </>
         ) : (
           <>
@@ -65,7 +65,7 @@ export default function ShiftPanel({
               </span>
             )}
             <span className="text-[12.5px] text-td-muted">
-              {doneCount} of {shift.blocks.length} downs logged
+              {shift.is_lump_sum ? "Logged as one total" : `${doneCount} of ${shift.blocks.length} downs logged`}
             </span>
           </>
         )}
@@ -76,47 +76,54 @@ export default function ShiftPanel({
             style={{ width: `${progress * 100}%` }}
           />
         </div>
+
+        {!isTournament && (
+          <button
+            onClick={onLogLumpSum}
+            className="mt-3.5 w-full flex items-center justify-center gap-2 rounded-[10px] border border-td-border text-td-muted text-[13px] font-semibold py-2.5 hover:border-td-gold hover:text-td-goldsoft"
+          >
+            <PenLine size={14} />
+            {shift.is_lump_sum ? "Edit total" : "Log entire shift instead"}
+          </button>
+        )}
       </section>
 
       <div className="flex flex-col gap-2">
         {shift.blocks.map((b) => (
           <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(b)} live />
         ))}
-      </div>
 
-      <div className="mt-3">
-        {!extendOpen ? (
-          <button
-            onClick={() => setExtendOpen(true)}
-            className="w-full flex items-center justify-center gap-2 rounded-[11px] border border-dashed border-td-border text-td-muted text-sm font-semibold py-3 hover:border-td-gold hover:text-td-goldsoft"
-          >
-            <Plus size={15} /> Add more time
-          </button>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <span className="text-[12px] text-td-muted text-center">Add how much more time?</span>
-            <div className="flex gap-2">
-              {[60, 120, 240].map((mins) => (
-                <button
-                  key={mins}
-                  onClick={() => {
-                    onExtend(mins);
-                    setExtendOpen(false);
-                  }}
-                  className="flex-1 rounded-[10px] py-2.5 font-semibold text-[13px] bg-td-surface2 border border-td-border text-td-cream hover:border-td-gold"
-                >
-                  {mins < 120 ? `${mins}m` : `${mins / 60}h`}
-                </button>
-              ))}
-            </div>
+        <div className="mt-1">
+          {!extendOpen ? (
             <button
-              onClick={() => setExtendOpen(false)}
-              className="text-[12px] text-td-muted text-center py-1"
+              onClick={() => setExtendOpen(true)}
+              className="w-full flex items-center justify-center gap-2 rounded-[11px] border border-dashed border-td-border text-td-muted text-sm font-semibold py-3 hover:border-td-gold hover:text-td-goldsoft"
             >
-              Cancel
+              <Plus size={15} /> Add more time
             </button>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col gap-2">
+              <span className="text-[12px] text-td-muted text-center">Add how much more time?</span>
+              <div className="flex gap-2">
+                {[60, 120, 240].map((mins) => (
+                  <button
+                    key={mins}
+                    onClick={() => {
+                      onExtend(mins);
+                      setExtendOpen(false);
+                    }}
+                    className="flex-1 rounded-[10px] py-2.5 font-semibold text-[13px] bg-td-surface2 border border-td-border text-td-cream hover:border-td-gold"
+                  >
+                    {mins < 120 ? `${mins}m` : `${mins / 60}h`}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setExtendOpen(false)} className="text-[12px] text-td-muted text-center py-1">
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

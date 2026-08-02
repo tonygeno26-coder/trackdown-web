@@ -9,6 +9,7 @@ import ShiftPanel from "@/components/ShiftPanel";
 import NewShiftModal from "@/components/NewShiftModal";
 import BlockSheet from "@/components/BlockSheet";
 import EndShiftModal from "@/components/EndShiftModal";
+import LumpSumModal from "@/components/LumpSumModal";
 import HistoryList from "@/components/HistoryList";
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
   const [newShiftOpen, setNewShiftOpen] = useState(false);
   const [blockSheet, setBlockSheet] = useState<{ shift: Shift; block: DownBlock } | null>(null);
   const [confirmEndShift, setConfirmEndShift] = useState(false);
+  const [lumpSumOpen, setLumpSumOpen] = useState(false);
 
   const loadShifts = useCallback(async () => {
     const { data, error } = await supabase
@@ -122,6 +124,22 @@ export default function Home() {
     setShifts((prev) => (prev || []).map((s) => (s.id === activeShift.id ? { ...s, blocks: nextBlocks } : s)));
   };
 
+  const logLumpSum = async (amount: number) => {
+    if (!activeShift) return;
+    const { error } = await supabase
+      .from("shifts")
+      .update({ is_lump_sum: true, lump_sum_tips: amount })
+      .eq("id", activeShift.id);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setShifts((prev) =>
+      (prev || []).map((s) => (s.id === activeShift.id ? { ...s, is_lump_sum: true, lump_sum_tips: amount } : s))
+    );
+    setLumpSumOpen(false);
+  };
+
   const deleteShift = async (id: string) => {
     const { error } = await supabase.from("shifts").delete().eq("id", id);
     if (error) {
@@ -131,7 +149,10 @@ export default function Home() {
     setShifts((prev) => (prev || []).filter((s) => s.id !== id));
   };
 
-  const shiftTotal = (shift: Shift) => shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
+  const shiftTotal = (shift: Shift) =>
+    shift.is_lump_sum
+      ? shift.lump_sum_tips || 0
+      : shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
   const shiftDoneCount = (shift: Shift) => shift.blocks.filter((b) => b.status === "done").length;
 
   if (shifts === null) {
@@ -203,6 +224,7 @@ export default function Home() {
               onBlockTap={(b) => setBlockSheet({ shift: activeShift, block: b })}
               onEndShift={() => setConfirmEndShift(true)}
               onExtend={extendShift}
+              onLogLumpSum={() => setLumpSumOpen(true)}
             />
           ))}
 
@@ -223,6 +245,14 @@ export default function Home() {
           block={blockSheet.block}
           onCancel={() => setBlockSheet(null)}
           onSave={saveBlock}
+        />
+      )}
+
+      {lumpSumOpen && activeShift && (
+        <LumpSumModal
+          currentAmount={activeShift.lump_sum_tips}
+          onCancel={() => setLumpSumOpen(false)}
+          onSave={logLumpSum}
         />
       )}
 
