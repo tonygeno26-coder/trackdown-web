@@ -23,7 +23,7 @@ import EditPlayingSessionModal from "@/components/playing/EditPlayingSessionModa
 import EndPlayingSessionModal from "@/components/playing/EndPlayingSessionModal";
 import AddNoteModal from "@/components/playing/AddNoteModal";
 import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
-import { PlayingShell } from "@/components/playing/PlayingUi";
+import { AppScreen } from "@/components/ui";
 import DeveloperPreviewBanner from "@/components/dev/DeveloperPreviewBanner";
 import { useDeveloperPreview } from "@/components/dev/DeveloperPreviewProvider";
 
@@ -364,7 +364,7 @@ export default function HomeDashboard({
     resultSession != null && getGamingCategory(resultSession) === "poker";
 
   return (
-    <PlayingShell>
+    <AppScreen>
       <DeveloperPreviewBanner />
 
       {hasConflict && (
@@ -502,6 +502,6 @@ export default function HomeDashboard({
           saving={saving}
         />
       )}
-    </PlayingShell>
+    </AppScreen>
   );
 }

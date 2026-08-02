@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import TrackdownHeader from "@/components/TrackdownHeader";
-import { PrimaryPlayingButton } from "@/components/playing/PlayingUi";
+import { PrimaryButton } from "@/components/ui";
 import { useAppSettings } from "@/components/settings/AppSettingsContext";
 import { AppSettings, AppSettingsUpdate } from "@/lib/settings";
 import DefaultsSettings from "@/components/settings/DefaultsSettings";
@@ -123,9 +123,9 @@ export default function SettingsScreen({
             Settings saved
           </div>
         )}
-        <PrimaryPlayingButton type="button" onClick={persistDraft} disabled={saving}>
+        <PrimaryButton type="button" onClick={persistDraft} disabled={saving}>
           {saving ? "Saving…" : "Save Settings"}
-        </PrimaryPlayingButton>
+        </PrimaryButton>
       </div>
     </div>
   );

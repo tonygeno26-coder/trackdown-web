@@ -35,13 +35,15 @@ export default function PlayingCardFace({
         className={`relative flex shrink-0 items-center justify-center rounded-lg border border-td-border bg-gradient-to-br from-td-surface2 to-td-surface shadow-td-card ${SIZE_CLASS[size]} ${dimmed ? "opacity-40" : ""}`}
         aria-label="Face-down card"
       >
-        <div className="h-[70%] w-[78%] rounded-md border border-td-border/60 bg-td-bg/80" />
+        <div className="absolute inset-[12%] rounded-md border border-td-border/50 bg-td-bg/90">
+          <div className="absolute inset-0 rounded-md bg-gradient-to-br from-td-surface2/40 to-transparent" />
+        </div>
       </div>
     );
   }
 
   const red = isRedSuit(card.suit);
-  const suitClass = red ? "text-td-gold" : "text-td-cream";
+  const suitClass = red ? "text-td-gold" : "text-td-surface";
   const label = cardAccessibilityLabel(card);
 
   return (

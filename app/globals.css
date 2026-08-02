@@ -6,10 +6,29 @@
   box-sizing: border-box;
 }
 
+html {
+  background-color: theme("colors.td.bg");
+}
+
 body {
   -webkit-font-smoothing: antialiased;
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  background-color: theme("colors.td.bg");
+  background-image:
+    radial-gradient(ellipse 100% 50% at 50% -20%, color-mix(in srgb, #c8202f 8%, transparent), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 80% 0%, color-mix(in srgb, #eceef0 3%, transparent), transparent 60%);
+  background-attachment: fixed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

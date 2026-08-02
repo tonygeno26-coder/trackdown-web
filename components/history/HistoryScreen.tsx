@@ -7,6 +7,7 @@ import DealingHistory from "@/components/history/DealingHistory";
 import GamingHistory from "@/components/history/GamingHistory";
 import BlockSheet from "@/components/BlockSheet";
 import TrackdownHeader from "@/components/TrackdownHeader";
+import { SegmentedControl } from "@/components/ui";
 
 type HistoryTab = "dealing" | "gaming";
 
@@ -61,20 +62,17 @@ export default function HistoryScreen({
 
   return (
     <div className="pb-4">
-      <TrackdownHeader />
+      <TrackdownHeader compact />
 
-      <div className="mb-5 mt-2 flex rounded-td-lg border border-td-border/80 bg-td-surface/80 p-1">
-        {(["dealing", "gaming"] as HistoryTab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`flex-1 rounded-[18px] py-2.5 text-[12.5px] font-semibold uppercase tracking-[0.5px] transition-colors ${
-              tab === t ? "bg-td-gold text-td-cream shadow-td-glow-sm" : "text-td-muted"
-            }`}
-          >
-            {t === "dealing" ? "Dealing" : "Gaming"}
-          </button>
-        ))}
+      <div className="mb-5 mt-2">
+        <SegmentedControl
+          options={[
+            { key: "dealing" as HistoryTab, label: "Dealing" },
+            { key: "gaming" as HistoryTab, label: "Gaming" },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
       </div>
 
       {tab === "dealing" ? (
