@@ -48,7 +48,9 @@ export default function HistoryList({
                   {fmtTime(shift.start_time)} · {shift.down_length}m downs · {done}/{shift.blocks.length} logged
                 </span>
               </div>
-              <span className="font-mono font-semibold text-td-goldsoft text-[15px]">{fmtMoney(total)}</span>
+              <span className="font-mono font-semibold text-td-goldsoft text-[15px]">
+                {shift.type === "tournament" ? `${done} downs` : fmtMoney(total)}
+              </span>
             </button>
 
             {isOpen && (

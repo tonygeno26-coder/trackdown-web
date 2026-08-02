@@ -16,7 +16,7 @@ export default function BlockSheet({
   onCancel: () => void;
   onSave: (updated: DownBlock) => void;
 }) {
-  const [tournament, setTournament] = useState(block.tournament);
+  const isTournament = shiftType === "tournament";
   const [table, setTable] = useState(block.table);
   const [game, setGame] = useState(block.game);
   const [tips, setTips] = useState(block.tips ? String(block.tips) : "");
@@ -27,10 +27,9 @@ export default function BlockSheet({
     onSave({
       ...block,
       status: "done",
-      tournament,
       table,
       game,
-      tips: parseFloat(tips) || 0,
+      tips: isTournament ? 0 : parseFloat(tips) || 0,
       notes,
     });
   };
@@ -38,10 +37,7 @@ export default function BlockSheet({
   const markSkipped = () => onSave({ ...block, status: "skipped" });
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75"
-      onClick={onCancel}
-    >
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={submit}
@@ -56,18 +52,7 @@ export default function BlockSheet({
           </button>
         </div>
 
-        {shiftType === "tournament" ? (
-          <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-            <span>Tournament</span>
-            <input
-              className="bg-td-bg border border-td-border rounded-[9px] px-3 py-2.5 text-td-cream text-[14.5px] focus:outline focus:outline-2 focus:outline-td-gold"
-              placeholder="e.g. $200 Deepstack"
-              value={tournament}
-              onChange={(e) => setTournament(e.target.value)}
-              autoFocus
-            />
-          </label>
-        ) : (
+        {!isTournament && (
           <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
             <span>Game</span>
             <input
@@ -87,26 +72,29 @@ export default function BlockSheet({
             placeholder="e.g. Table 14"
             value={table}
             onChange={(e) => setTable(e.target.value)}
+            autoFocus={isTournament}
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
-          <span>Tips</span>
-          <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
-            <span className="font-mono text-td-muted">$</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              step="1"
-              min="0"
-              required
-              placeholder="0"
-              className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
-              value={tips}
-              onChange={(e) => setTips(e.target.value)}
-            />
-          </div>
-        </label>
+        {!isTournament && (
+          <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
+            <span>Tips</span>
+            <div className="flex items-center bg-td-bg border border-td-border rounded-[9px] px-3">
+              <span className="font-mono text-td-muted">$</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="1"
+                min="0"
+                required
+                placeholder="0"
+                className="bg-transparent border-none py-2.5 px-1 font-mono font-semibold flex-1 focus:outline-none text-td-cream"
+                value={tips}
+                onChange={(e) => setTips(e.target.value)}
+              />
+            </div>
+          </label>
+        )}
 
         <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
           <span>Notes</span>
@@ -130,7 +118,7 @@ export default function BlockSheet({
             type="submit"
             className="flex-1 flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-gold text-[#1a1305] hover:bg-td-goldsoft"
           >
-            <Check size={16} /> Save
+            <Check size={16} /> {isTournament ? "Mark logged" : "Save"}
           </button>
         </div>
       </form>

@@ -18,21 +18,18 @@ export default function ShiftPanel({
   onEndShift: () => void;
 }) {
   const progress = doneCount / shift.blocks.length;
+  const isTournament = shift.type === "tournament";
   const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
+  const typeLabel =
+    shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game";
 
   return (
     <>
       <section className="bg-td-surface border border-td-border rounded-2xl px-5.5 py-5 mb-4">
         <div className="flex justify-between items-center mb-1.5">
-          <div>
-            {shift.title && (
-              <div className="text-sm font-semibold text-td-cream mb-0.5">{shift.title}</div>
-            )}
-            <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
-              {shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game"} ·{" "}
-              {shift.down_length}m downs
-            </span>
-          </div>
+          <span className="text-xs text-td-muted font-semibold uppercase tracking-wide">
+            {typeLabel} · {shift.down_length}m downs
+          </span>
           <button
             onClick={onEndShift}
             className="bg-transparent border border-td-border text-td-muted text-xs font-semibold px-2.5 py-1.5 rounded-md hover:text-td-red hover:border-td-red"
@@ -40,17 +37,34 @@ export default function ShiftPanel({
             End shift
           </button>
         </div>
-        <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
-          {fmtMoney(net)}
-        </span>
-        {shift.house_tax_pct > 0 && (
-          <span className="text-[11.5px] text-td-muted block">
-            {fmtMoney(total)} gross · {shift.house_tax_pct}% house cut
-          </span>
+
+        {shift.title && <div className="text-sm font-semibold text-td-cream mb-1">{shift.title}</div>}
+
+        {isTournament ? (
+          <>
+            <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
+              {doneCount}
+            </span>
+            <span className="text-[12.5px] text-td-muted">
+              of {shift.blocks.length} downs logged
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
+              {fmtMoney(net)}
+            </span>
+            {shift.house_tax_pct > 0 && (
+              <span className="text-[11.5px] text-td-muted block">
+                {fmtMoney(total)} gross · {shift.house_tax_pct}% house cut
+              </span>
+            )}
+            <span className="text-[12.5px] text-td-muted">
+              {doneCount} of {shift.blocks.length} downs logged
+            </span>
+          </>
         )}
-        <span className="text-[12.5px] text-td-muted">
-          {doneCount} of {shift.blocks.length} downs logged
-        </span>
+
         <div className="mt-3.5 h-1 bg-td-surface2 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-td-gold to-td-goldsoft rounded-full transition-all duration-300"

@@ -15,6 +15,7 @@ export default function BlockRow({
   live?: boolean;
 }) {
   const current = live && block.status === "pending" && isNowWithin(block.scheduledStart, block.scheduledEnd);
+  const isTournament = type === "tournament";
 
   return (
     <button
@@ -33,12 +34,14 @@ export default function BlockRow({
 
       <div className="flex-1 min-w-0 flex flex-col">
         {block.status === "done" ? (
-          <>
-            <span className="text-sm font-semibold truncate">
-              {type === "tournament" ? block.tournament || "Untitled" : block.game || "Cash table"}
-            </span>
-            {block.table && <span className="text-[11.5px] text-td-muted">{block.table}</span>}
-          </>
+          isTournament ? (
+            <span className="text-sm font-semibold truncate">{block.table || "Table logged"}</span>
+          ) : (
+            <>
+              <span className="text-sm font-semibold truncate">{block.game || "Cash table"}</span>
+              {block.table && <span className="text-[11.5px] text-td-muted">{block.table}</span>}
+            </>
+          )
         ) : (
           <span className="text-[13px] text-td-muted italic">
             {block.status === "skipped" ? "Skipped" : "Tap to log"}
@@ -47,8 +50,11 @@ export default function BlockRow({
       </div>
 
       <div className="flex items-center">
-        {block.status === "done" && (
+        {block.status === "done" && !isTournament && (
           <span className="font-mono font-semibold text-[14.5px] text-td-goldsoft">{fmtMoney(block.tips)}</span>
+        )}
+        {block.status === "done" && isTournament && (
+          <span className="w-1.5 h-1.5 rounded-full bg-td-gold" />
         )}
         {block.status === "pending" && <span className="w-1.5 h-1.5 rounded-full bg-td-border" />}
       </div>
