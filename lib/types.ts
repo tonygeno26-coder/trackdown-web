@@ -1,5 +1,5 @@
 export type ShiftType = "tournament" | "cash" | "homegame";
-export type BlockStatus = "pending" | "done" | "skipped";
+export type BlockStatus = "pending" | "done" | "skipped" | "break";
 
 export interface DownBlock {
   id: string;

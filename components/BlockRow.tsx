@@ -1,5 +1,6 @@
 "use client";
 
+import { Coffee } from "lucide-react";
 import { DownBlock, ShiftType } from "@/lib/types";
 import { fmtMoney, fmtTime, isNowWithin } from "@/lib/blocks";
 
@@ -25,6 +26,7 @@ export default function BlockRow({
         ${current ? "border-td-gold bg-td-surface2" : ""}
         ${block.status === "done" ? "opacity-95" : ""}
         ${block.status === "skipped" ? "opacity-45" : ""}
+        ${block.status === "break" ? "opacity-70" : ""}
       `}
     >
       <div className="flex flex-col items-start min-w-[62px]">
@@ -33,7 +35,11 @@ export default function BlockRow({
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        {block.status === "done" ? (
+        {block.status === "break" ? (
+          <span className="text-sm font-semibold flex items-center gap-1.5 text-td-muted">
+            <Coffee size={14} /> Break
+          </span>
+        ) : block.status === "done" ? (
           isTournament ? (
             <span className="text-sm font-semibold truncate">{block.table || "Table logged"}</span>
           ) : (
@@ -53,9 +59,7 @@ export default function BlockRow({
         {block.status === "done" && !isTournament && (
           <span className="font-mono font-semibold text-[14.5px] text-td-goldsoft">{fmtMoney(block.tips)}</span>
         )}
-        {block.status === "done" && isTournament && (
-          <span className="w-1.5 h-1.5 rounded-full bg-td-gold" />
-        )}
+        {block.status === "done" && isTournament && <span className="w-1.5 h-1.5 rounded-full bg-td-gold" />}
         {block.status === "pending" && <span className="w-1.5 h-1.5 rounded-full bg-td-border" />}
       </div>
     </button>

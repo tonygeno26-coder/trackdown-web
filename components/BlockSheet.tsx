@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Coffee } from "lucide-react";
 import { DownBlock, ShiftType } from "@/lib/types";
 import { fmtTime } from "@/lib/blocks";
 
@@ -35,6 +35,8 @@ export default function BlockSheet({
   };
 
   const markSkipped = () => onSave({ ...block, status: "skipped" });
+  const markBreak = () =>
+    onSave({ ...block, status: "break", table: "", game: "", tips: 0, tournament: "", notes: "" });
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75" onClick={onCancel}>
@@ -52,6 +54,16 @@ export default function BlockSheet({
           </button>
         </div>
 
+        <button
+          type="button"
+          onClick={markBreak}
+          className="flex items-center justify-center gap-2 rounded-[10px] py-3 font-bold text-sm bg-td-surface2 border border-td-border text-td-cream hover:border-td-gold"
+        >
+          <Coffee size={16} /> Mark this down as a break
+        </button>
+
+        <div className="h-px bg-td-border" />
+
         {!isTournament && (
           <label className="flex flex-col gap-1 text-[12.5px] text-td-muted">
             <span>Game</span>
@@ -60,7 +72,6 @@ export default function BlockSheet({
               placeholder="e.g. 1/2 NLH"
               value={game}
               onChange={(e) => setGame(e.target.value)}
-              autoFocus
             />
           </label>
         )}
@@ -72,7 +83,6 @@ export default function BlockSheet({
             placeholder="e.g. Table 14"
             value={table}
             onChange={(e) => setTable(e.target.value)}
-            autoFocus={isTournament}
           />
         </label>
 
