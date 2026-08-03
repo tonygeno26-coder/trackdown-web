@@ -8,21 +8,21 @@ const VARIANTS: Record<
 > = {
   header: {
     src: "/logo-header.png",
-    width: 592,
-    height: 168,
-    className: "h-[52px] w-auto max-w-[min(100%,320px)]",
+    width: 256,
+    height: 256,
+    className: "h-[52px] w-[52px] object-contain",
   },
   icon: {
     src: "/logo-icon.png",
     width: 512,
     height: 512,
-    className: "h-9 w-9",
+    className: "h-9 w-9 object-contain",
   },
   splash: {
     src: "/logo.png",
-    width: 640,
-    height: 220,
-    className: "h-auto w-[min(100%,280px)]",
+    width: 512,
+    height: 512,
+    className: "h-auto w-[min(100%,200px)] object-contain",
   },
 };
 
