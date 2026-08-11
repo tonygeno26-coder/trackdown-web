@@ -129,6 +129,9 @@ export async function updateSettings(
   id: string,
   updates: AppSettingsUpdate
 ): Promise<{ data: AppSettings | null; error: string | null }> {
+  const userId = await ensureUserId();
+  if (!userId) return { data: null, error: "Could not authenticate for settings." };
+
   const payload = {
     ...updates,
     updated_at: new Date().toISOString(),
@@ -138,6 +141,7 @@ export async function updateSettings(
     .from("app_settings")
     .update(payload)
     .eq("id", id)
+    .eq("user_id", userId)
     .select()
     .single();
 
