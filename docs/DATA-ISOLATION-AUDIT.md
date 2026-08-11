@@ -432,7 +432,9 @@ Use one physical device; repeat for accounts A, B, and C:
 | Preview clears off dev mode | — | — | ☐ |
 | Clean after sign-out | — | — | ☐ |
 
-**Sign-out path on TestFlight:** Settings → Developer (enable Developer Mode first if needed) → **Sign Out & New Session**, or delete app and reinstall for a guaranteed fresh anonymous user.
+**Sign-out path on TestFlight:** Settings → Developer → **Sign Out & New Session** (requires Developer Mode). Alternative: delete app and reinstall for a guaranteed fresh anonymous user.
+
+**Quick checklist:** [BETA-TESTFLIGHT-CHECKLIST.md](./BETA-TESTFLIGHT-CHECKLIST.md)
 
 ---
 
@@ -440,7 +442,8 @@ Use one physical device; repeat for accounts A, B, and C:
 
 | Blocker | Severity | Status |
 |---------|----------|--------|
-| Manual A/B/C TestFlight run | **Medium** | **OPEN** — automated verification PASS; human device sign-off pending |
+| Manual A/B/C TestFlight run | **Medium** | **OPEN** — Sign Out & New Session UI added; human device sign-off pending |
+| Auth fix on `main` / Railway | **Medium** | **OPEN** — `cursor/fix-testflight-auth-launch` (`f843f63`) not merged; required for WKWebView stale sessions |
 | Legacy NULL `user_id` rows | None | Acceptable — invisible under RLS |
 | No live JWT cross-user integration test in CI | Low | Acceptable for beta; staging project recommended later |
 | Dead code paths without explicit `user_id` | Low | RLS triggers provide defense in depth; not mounted in app |
