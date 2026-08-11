@@ -18,7 +18,7 @@ import { LoadingState, ErrorState } from "@/components/ui";
 import { fadeSlide } from "@/components/ui/motion";
 
 function TrackdownApp() {
-  const { userId, ready, authError, retryAuth } = useAuth();
+  const { userId, ready, authError, authDiagnosticCode, retryAuth } = useAuth();
   const [shifts, setShifts] = useState<Shift[] | null>(null);
   const [playingSessions, setPlayingSessions] = useState<PlayingSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,11 @@ function TrackdownApp() {
   if (authError) {
     return (
       <div className="min-h-screen bg-td-bg">
-        <ErrorState message={authError} onRetry={retryAuth} />
+        <ErrorState
+          message={authError}
+          onRetry={retryAuth}
+          diagnosticCode={authDiagnosticCode}
+        />
       </div>
     );
   }
