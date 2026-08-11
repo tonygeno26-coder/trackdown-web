@@ -217,3 +217,235 @@ Prior commits on branch (`bb01030`, `6e55602`): anonymous auth, RLS migration, d
 - [ ] User explicitly approves push (per project instructions)
 
 **Push recommendation:** Ready after test/build green and manual TestFlight spot-check (optional but recommended).
+
+---
+
+## Verification Results
+
+**Date:** 2026-08-11  
+**Branch:** `cursor/beta-data-isolation-audit`  
+**Verifier:** Cursor agent (automated suite + Supabase MCP read-only SQL + code-path audit)  
+**Context:** TestFlight launches after Anonymous Sign-Ins enabled; verification run before external beta testers.
+
+### Isolation area summary
+
+| Area | Result | Evidence |
+|------|--------|----------|
+| Dealer shifts | **PASS** | RLS `Users manage own shifts` (FOR ALL, `auth.uid() = user_id`); `HomeDashboard` inserts set `user_id`; `app/page.tsx` SELECT relies on RLS; legacy NULL rows invisible |
+| Gaming sessions | **PASS** | RLS `Users manage own playing sessions`; `HomeDashboard` inserts set `user_id`; UPDATE/DELETE by id protected by RLS |
+| Stats / history | **PASS** | `StatsScreen` applies `excludeDemoRecords` before totals; History lists in-memory data loaded post-RLS filter; empty lists render empty-state UI |
+| My Hands | **PASS** | `saved_hands.user_id NOT NULL`; RLS policy present; `fetchSavedHands` / `saveHand` / `deleteSavedHand` all filter `.eq("user_id", userId)` |
+| Settings | **PASS** | `fetchSettings` / `createDefaultSettings` / `updateSettings` all scope by `user_id`; `AppSettingsProvider` reloads on `userId` change |
+| Demo data isolation | **PASS** | `seedDemoData` only in `DeveloperSettings`; inserts `is_demo: true` + `user_id`; `clearDemoData` scoped to current user; stats exclude demo |
+| localStorage / dev preview | **PASS** | 6 keys documented in `lib/user-storage.ts`; `AuthProvider.applyUserChange` calls `clearUserLocalState`; `DeveloperPreviewProvider` resets preview on user change |
+| RLS (database level) | **PASS** | Live MCP: `rowsecurity = true` on all 4 tables; exactly one FOR ALL policy per table; no extra/permissive policies; insert triggers present |
+| Brand-new user clean start | **PASS** | Anonymous auth → unique uid; RLS returns empty arrays; Home shows `EmptyHomeState`; Stats show $0; History empty; My Hands empty; settings created per-user on first fetch |
+
+**Overall automated verdict:** **PASS** — no isolation gaps found in automated verification.  
+**Manual TestFlight A/B/C:** **PENDING** — required before external beta sign-off (steps below).
+
+---
+
+### Automated tests performed
+
+| Command | Result | Count |
+|---------|--------|-------|
+| `npm test` | ✅ PASS | **46 tests** across **5 files** (18 in `lib/__tests__/data-isolation.test.ts`) |
+| `npm run build` | ✅ PASS | Next.js production build + training content validation |
+
+**`data-isolation.test.ts` coverage (18 tests):**
+
+- `excludeDemoRecords` filtering
+- localStorage key separation (`DEV_LOCAL_STORAGE_KEYS` vs `USER_LOCAL_STORAGE_KEYS`)
+- `AuthProvider` clears keys on user change
+- `DeveloperPreviewProvider` resets preview on user change
+- Migration SQL: `user_id` columns, permissive policy drops, RLS policies, insert triggers
+- `saved_hands` migration: NOT NULL `user_id`, RLS enabled
+- Client insert scoping: `HomeDashboard`, `settings.ts`, `hands/storage.ts`, `demo-data.ts`
+- `StatsScreen` uses `excludeDemoRecords` (BUG-103)
+- Per-table RLS policy definitions in migration SQL
+
+---
+
+### Live Supabase verification (read-only, project `jjblqnnxmmgdkjntgkkh`)
+
+**RLS enabled:**
+
+| Table | `rowsecurity` |
+|-------|---------------|
+| `shifts` | true |
+| `playing_sessions` | true |
+| `app_settings` | true |
+| `saved_hands` | true |
+
+**Policies (one per table, no extras):**
+
+| Table | Policy | `cmd` | `qual` | `with_check` |
+|-------|--------|-------|--------|--------------|
+| `shifts` | Users manage own shifts | ALL | `(auth.uid() = user_id)` | `(auth.uid() = user_id)` |
+| `playing_sessions` | Users manage own playing sessions | ALL | `(auth.uid() = user_id)` | `(auth.uid() = user_id)` |
+| `app_settings` | Users manage own app settings | ALL | `(auth.uid() = user_id)` | `(auth.uid() = user_id)` |
+| `saved_hands` | Users manage own saved hands | ALL | `(auth.uid() = user_id)` | `(auth.uid() = user_id)` |
+
+Query for extra/permissive policies returned **0 rows** (no `"Allow all for anon"` remnants).
+
+**Insert triggers:**
+
+| Trigger | Table |
+|---------|-------|
+| `set_shifts_user_id` | `shifts` |
+| `set_playing_sessions_user_id` | `playing_sessions` |
+| `set_app_settings_user_id` | `app_settings` |
+
+**Legacy orphan rows (unchanged, not deleted):**
+
+| Table | Total | With `user_id` | NULL `user_id` |
+|-------|-------|----------------|----------------|
+| `shifts` | 11 | 0 | 11 |
+| `playing_sessions` | 3 | 0 | 3 |
+| `app_settings` | 2 | 1 | 1 |
+| `saved_hands` | 0 | 0 | 0 |
+
+NULL `user_id` rows remain invisible under RLS (`auth.uid() = user_id` never matches NULL).
+
+---
+
+### RLS cross-user isolation (documented SQL — do not run against prod with write intent)
+
+To prove Account B cannot read Account A's rows **without creating test users in production**, use a **staging project** or Supabase SQL editor with two test JWTs. Expected behavior on production schema:
+
+```sql
+-- Authenticated as User B (JWT in request context):
+SELECT * FROM public.shifts WHERE id = '<Account-A-shift-uuid>';
+-- Expected: 0 rows
+
+SELECT * FROM public.playing_sessions WHERE id = '<Account-A-session-uuid>';
+-- Expected: 0 rows
+
+UPDATE public.shifts SET title = 'cross-user probe' WHERE id = '<Account-A-shift-uuid>';
+-- Expected: 0 rows affected (RLS WITH CHECK blocks visibility)
+
+DELETE FROM public.shifts WHERE id = '<Account-A-shift-uuid>';
+-- Expected: 0 rows deleted
+```
+
+Unit tests in `lib/__tests__/data-isolation.test.ts` assert migration-defined policies match this model. Live cross-user JWT tests were **not** run against production to avoid modifying user data.
+
+---
+
+### Code-path audit
+
+| File / area | User scoping | RLS backup |
+|-------------|--------------|------------|
+| `lib/auth.ts` | Anonymous sign-in per install; `signOutUser` for fresh session | N/A (auth layer) |
+| `lib/data-filters.ts` | `excludeDemoRecords` for stats | N/A |
+| `app/page.tsx` | Loads only after `userId` ready; SELECT without client filter | ✅ RLS |
+| `components/home/HomeDashboard.tsx` | Inserts include `user_id: userId` | ✅ RLS + triggers |
+| `lib/db-mutations.ts` | UPDATE by id only | ✅ RLS |
+| `components/history/HistoryScreen.tsx` | DELETE by id only | ✅ RLS |
+| `lib/settings.ts` | All ops `.eq("user_id", userId)` | ✅ RLS |
+| `lib/hands/storage.ts` | All ops `.eq("user_id", userId)` | ✅ RLS |
+| `lib/demo-data.ts` | All ops scoped to `userId`; `is_demo: true` | ✅ RLS |
+| `components/stats/StatsScreen.tsx` | `excludeDemoRecords` before aggregation | ✅ |
+| `components/auth/AuthProvider.tsx` | `clearUserLocalState` on user change | N/A |
+| `components/dev/DeveloperPreviewProvider.tsx` | Resets preview state on user change | N/A (UI-only preview) |
+| `components/settings/AppSettingsContext.tsx` | Reloads settings when `userId` changes | ✅ |
+| `components/dealing/DealingSection.tsx` | ⚠️ Dead code (not mounted); no explicit `user_id` on insert | ✅ RLS trigger fallback |
+| `components/playing/PlayingSection.tsx` | ⚠️ Dead code (not mounted); no explicit `user_id` | ✅ RLS trigger fallback |
+
+---
+
+### localStorage keys (`lib/user-storage.ts`)
+
+| Key | Category | Cleared on user change |
+|-----|----------|------------------------|
+| `trackdown_dev_preview` | Developer | ✅ `DEV_LOCAL_STORAGE_KEYS` |
+| `trackdown_dev_solver_pro_preview` | Developer | ✅ |
+| `trackdown_training_progress_v1` | User prefs | ✅ `USER_LOCAL_STORAGE_KEYS` |
+| `trackdown_adaptive_training_v1` | User prefs | ✅ |
+| `trackdown_blackjack_rules_v1` | User prefs | ✅ |
+| `trackdown_last_tournament_hourly_rate` | User prefs | ✅ |
+
+Triggered by `AuthProvider.applyUserChange` when `lastUserId !== nextUserId`. Verified by unit test reading source for `clearUserLocalState` call.
+
+---
+
+### Brand-new user empty state
+
+| Screen | Behavior when no rows for `user_id` |
+|--------|-------------------------------------|
+| Home | `EmptyHomeState` when no active shift/session |
+| Stats | $0 dealer earnings, $0 gaming net (empty filtered arrays) |
+| History | Empty dealing/gaming lists |
+| My Hands | `EmptyState` "No Saved Hands" |
+| Settings | `fetchOrCreateSettings` creates fresh defaults for new user |
+
+Data load in `app/page.tsx` waits for auth `userId`, resets state on user change, then fetches — RLS ensures zero rows for a new anonymous user.
+
+---
+
+### Manual verification steps (from audit — all required on TestFlight)
+
+Perform on **three separate anonymous sessions** (reinstall, or Settings → Developer → **Sign Out & New Session** if exposed, or delete app + reinstall):
+
+#### 1. Account A
+
+1. Launch app → confirm **empty Home**, **$0 Stats**, **empty History**.
+2. Start **one dealer shift** (any type) and **one gaming session**.
+3. Note shift and session UUIDs (Settings → Developer → diagnostics, or Supabase dashboard with service role).
+
+#### 2. Account B
+
+1. Force a **new anonymous session** (reinstall app, or sign out + relaunch).
+2. Confirm **empty Home**, **$0 Stats**, **empty History** — Account A data must not appear.
+3. *(Optional deep check)* Attempt to fetch Account A shift by UUID via dev tools → expect **empty / permission denied**.
+
+#### 3. Account C
+
+1. Settings → enable **Developer Mode**.
+2. Tap **Seed Demo Data**.
+3. Confirm demo shifts/sessions appear in **History** but **Stats remain $0** (demo excluded).
+4. Disable Developer Mode → confirm **preview UI clears**.
+5. Sign out / new session → confirm demo and preview **gone**; fresh session starts clean.
+
+#### 4. Cross-account
+
+1. With Account B active, verify Account A shift/session UUIDs are **not visible** on Home, Stats, History, or Settings tabs.
+
+---
+
+### Manual TestFlight instructions (device checklist)
+
+Use one physical device; repeat for accounts A, B, and C:
+
+| Step | Account A | Account B | Account C |
+|------|-----------|-----------|-----------|
+| Fresh install / new session | ✅ First launch | ✅ After A, reinstall or sign out | ✅ After B, reinstall or sign out |
+| Home empty | ☐ | ☐ | ☐ |
+| Stats $0 | ☐ | ☐ | ☐ (also after seeding demo) |
+| History empty | ☐ | ☐ | ☐ (before demo seed) |
+| Create shift + session | ☐ | — | — |
+| Record UUIDs | ☐ | — | — |
+| A's data invisible | — | ☐ | ☐ |
+| Enable dev mode + seed demo | — | — | ☐ |
+| Demo in History, not in Stats | — | — | ☐ |
+| Preview clears off dev mode | — | — | ☐ |
+| Clean after sign-out | — | — | ☐ |
+
+**Sign-out path on TestFlight:** Settings → Developer → **Sign Out & New Session** (requires Developer Mode). Alternative: delete app and reinstall for a guaranteed fresh anonymous user.
+
+**Quick checklist:** [BETA-TESTFLIGHT-CHECKLIST.md](./BETA-TESTFLIGHT-CHECKLIST.md)
+
+---
+
+### Blockers before external beta
+
+| Blocker | Severity | Status |
+|---------|----------|--------|
+| Manual A/B/C TestFlight run | **Medium** | **OPEN** — Sign Out & New Session UI added; human device sign-off pending |
+| Auth fix on `main` / Railway | **Medium** | **OPEN** — `cursor/fix-testflight-auth-launch` (`f843f63`) not merged; required for WKWebView stale sessions |
+| Legacy NULL `user_id` rows | None | Acceptable — invisible under RLS |
+| No live JWT cross-user integration test in CI | Low | Acceptable for beta; staging project recommended later |
+| Dead code paths without explicit `user_id` | Low | RLS triggers provide defense in depth; not mounted in app |
+
+**Recommendation:** Proceed to external beta **after** completing the manual TestFlight checklist above. Automated isolation verification is **green**.

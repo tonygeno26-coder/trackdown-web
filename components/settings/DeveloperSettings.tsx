@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Monitor, Trash2, FlaskConical, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Monitor, Trash2, FlaskConical, Eye, EyeOff, Sparkles, LogOut } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { signOutUser } from "@/lib/auth";
 import { AppTab } from "@/components/navigation/BottomNav";
 import { Shift, PlayingSession } from "@/lib/types";
 import { useAppSettings } from "@/components/settings/AppSettingsContext";
@@ -38,6 +40,7 @@ export default function DeveloperSettings({
     lastSupabaseError,
     recordSupabaseError,
   } = useAppSettings();
+  const { retryAuth } = useAuth();
   const { previewMode, setPreviewMode, clearPreview, isPreviewActive } = useDeveloperPreview();
 
   const [connectionStatus, setConnectionStatus] = useState<"checking" | "connected" | "error">("checking");
@@ -213,6 +216,35 @@ export default function DeveloperSettings({
         <DiagRow label="Display mode" value={displayMode} />
         <DiagRow label="Time zone" value={Intl.DateTimeFormat().resolvedOptions().timeZone} />
       </PlayingCard>
+
+      <div className="space-y-2">
+        <p className="text-[11px] font-semibold uppercase tracking-[1px] text-td-muted">Session</p>
+        <SecondaryPlayingButton
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setActionMessage(null);
+            setActionError(null);
+            clearPreview();
+            const { error } = await signOutUser();
+            if (error) {
+              setActionError(error);
+              setBusy(false);
+              return;
+            }
+            await retryAuth();
+            await onReloadData();
+            setBusy(false);
+            setActionMessage("Signed out — new anonymous session started");
+          }}
+        >
+          <LogOut size={16} /> Sign Out &amp; New Session
+        </SecondaryPlayingButton>
+        <p className="text-[11px] text-td-muted">
+          For A/B/C isolation testing: creates a fresh anonymous user without reinstalling.
+        </p>
+      </div>
 
       <SecondaryPlayingButton
         type="button"
