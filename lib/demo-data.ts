@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { ensureUserId } from "./auth";
 import { buildBlocks } from "./blocks";
 import { Shift, PlayingSession } from "./types";
 
@@ -11,6 +12,9 @@ function shiftEnd(startISO: string, hours: number): string {
 }
 
 export async function seedDemoData(): Promise<{ error: string | null }> {
+  const userId = await ensureUserId();
+  if (!userId) return { error: "Could not authenticate for demo data." };
+
   const cleared = await clearDemoData();
   if (cleared.error) return cleared;
 
@@ -44,6 +48,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       is_lump_sum: false,
       blocks: tournamentBlocks,
       is_demo: true,
+      user_id: userId,
     },
     {
       type: "cash",
@@ -57,6 +62,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       is_lump_sum: false,
       blocks: cashBlocks,
       is_demo: true,
+      user_id: userId,
     },
     {
       type: "homegame",
@@ -73,6 +79,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       settled_amount: 378,
       blocks: buildBlocks(homeStart, 30),
       is_demo: true,
+      user_id: userId,
     },
     {
       type: "homegame",
@@ -88,6 +95,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       settled_status: "no",
       settled_amount: null,
       is_demo: true,
+      user_id: userId,
     },
   ];
 
@@ -107,6 +115,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       expenses: 25,
       notes: "Demo winning poker cash session",
       is_demo: true,
+      user_id: userId,
     },
     {
       title: "poker",
@@ -123,6 +132,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       expenses: 15,
       notes: "Demo losing poker session",
       is_demo: true,
+      user_id: userId,
     },
     {
       title: "poker",
@@ -139,6 +149,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       expenses: 40,
       notes: "Demo tournament session with re-entry",
       is_demo: true,
+      user_id: userId,
     },
     {
       title: "table_games",
@@ -155,6 +166,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       expenses: 0,
       notes: "Demo — Blackjack Session",
       is_demo: true,
+      user_id: userId,
     },
     {
       title: "table_games",
@@ -171,6 +183,7 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
       expenses: 20,
       notes: "Demo craps session",
       is_demo: true,
+      user_id: userId,
     },
   ];
 
@@ -184,10 +197,21 @@ export async function seedDemoData(): Promise<{ error: string | null }> {
 }
 
 export async function clearDemoData(): Promise<{ error: string | null }> {
-  const { error: shiftErr } = await supabase.from("shifts").delete().eq("is_demo", true);
+  const userId = await ensureUserId();
+  if (!userId) return { error: "Could not authenticate for demo data." };
+
+  const { error: shiftErr } = await supabase
+    .from("shifts")
+    .delete()
+    .eq("is_demo", true)
+    .eq("user_id", userId);
   if (shiftErr) return { error: shiftErr.message };
 
-  const { error: sessionErr } = await supabase.from("playing_sessions").delete().eq("is_demo", true);
+  const { error: sessionErr } = await supabase
+    .from("playing_sessions")
+    .delete()
+    .eq("is_demo", true)
+    .eq("user_id", userId);
   if (sessionErr) return { error: sessionErr.message };
 
   return { error: null };
@@ -198,9 +222,20 @@ export async function countDemoRecords(): Promise<{
   sessions: number;
   error: string | null;
 }> {
+  const userId = await ensureUserId();
+  if (!userId) return { shifts: 0, sessions: 0, error: "Could not authenticate for demo data." };
+
   const [shiftsRes, sessionsRes] = await Promise.all([
-    supabase.from("shifts").select("id", { count: "exact", head: true }).eq("is_demo", true),
-    supabase.from("playing_sessions").select("id", { count: "exact", head: true }).eq("is_demo", true),
+    supabase
+      .from("shifts")
+      .select("id", { count: "exact", head: true })
+      .eq("is_demo", true)
+      .eq("user_id", userId),
+    supabase
+      .from("playing_sessions")
+      .select("id", { count: "exact", head: true })
+      .eq("is_demo", true)
+      .eq("user_id", userId),
   ]);
 
   if (shiftsRes.error) return { shifts: 0, sessions: 0, error: shiftsRes.error.message };

@@ -11,12 +11,14 @@ import HistoryScreen from "@/components/history/HistoryScreen";
 import SettingsScreen from "@/components/settings/SettingsScreen";
 import TrainScreen from "@/components/train/TrainScreen";
 import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
+import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
 import DeveloperPreviewGuard from "@/components/dev/DeveloperPreviewGuard";
 import { LoadingState, ErrorState } from "@/components/ui";
 import { fadeSlide } from "@/components/ui/motion";
 
 function TrackdownApp() {
+  const { userId, ready, authError, retryAuth } = useAuth();
   const [shifts, setShifts] = useState<Shift[] | null>(null);
   const [playingSessions, setPlayingSessions] = useState<PlayingSession[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,7 @@ function TrackdownApp() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
+    if (!userId) return;
     const [shiftsRes, sessionsRes] = await Promise.all([
       supabase.from("shifts").select("*").order("start_time", { ascending: false }),
       supabase.from("playing_sessions").select("*").order("start_time", { ascending: false }),
@@ -41,11 +44,30 @@ function TrackdownApp() {
     setLoadError(null);
     setShifts(shiftsRes.data as Shift[]);
     setPlayingSessions(sessionsRes.data as PlayingSession[]);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
+    if (!ready || !userId) return;
+    setShifts(null);
+    setPlayingSessions(null);
     loadData();
-  }, [loadData]);
+  }, [ready, userId, loadData]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-td-bg">
+        <LoadingState message="Loading Trackdown…" />
+      </div>
+    );
+  }
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-td-bg">
+        <ErrorState message={authError} onRetry={retryAuth} />
+      </div>
+    );
+  }
 
   if (loadError) {
     return (
@@ -121,11 +143,13 @@ function TrackdownApp() {
 
 export default function Home() {
   return (
-    <AppSettingsProvider>
-      <DeveloperPreviewProvider>
-        <DeveloperPreviewGuard />
-        <TrackdownApp />
-      </DeveloperPreviewProvider>
-    </AppSettingsProvider>
+    <AuthProvider>
+      <AppSettingsProvider>
+        <DeveloperPreviewProvider>
+          <DeveloperPreviewGuard />
+          <TrackdownApp />
+        </DeveloperPreviewProvider>
+      </AppSettingsProvider>
+    </AuthProvider>
   );
 }

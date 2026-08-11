@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { ensureUserId } from "./auth";
 import { ShiftType } from "./types";
 
 export interface AppSettings {
@@ -83,11 +84,13 @@ function mapRow(row: Record<string, unknown>): AppSettings {
 }
 
 export async function fetchSettings(): Promise<{ data: AppSettings | null; error: string | null }> {
+  const userId = await ensureUserId();
+  if (!userId) return { data: null, error: "Could not authenticate for settings." };
+
   const { data, error } = await supabase
     .from("app_settings")
     .select("*")
-    .order("created_at", { ascending: true })
-    .limit(1)
+    .eq("user_id", userId)
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
@@ -99,9 +102,12 @@ export async function createDefaultSettings(): Promise<{
   data: AppSettings | null;
   error: string | null;
 }> {
+  const userId = await ensureUserId();
+  if (!userId) return { data: null, error: "Could not authenticate for settings." };
+
   const { data, error } = await supabase
     .from("app_settings")
-    .insert(createDefaultSettingsRow())
+    .insert({ ...createDefaultSettingsRow(), user_id: userId })
     .select()
     .single();
 
@@ -123,6 +129,9 @@ export async function updateSettings(
   id: string,
   updates: AppSettingsUpdate
 ): Promise<{ data: AppSettings | null; error: string | null }> {
+  const userId = await ensureUserId();
+  if (!userId) return { data: null, error: "Could not authenticate for settings." };
+
   const payload = {
     ...updates,
     updated_at: new Date().toISOString(),
@@ -132,6 +141,7 @@ export async function updateSettings(
     .from("app_settings")
     .update(payload)
     .eq("id", id)
+    .eq("user_id", userId)
     .select()
     .single();
 

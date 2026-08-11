@@ -27,6 +27,7 @@ import PlayingSessionResult from "@/components/playing/PlayingSessionResult";
 import { AppScreen } from "@/components/ui";
 import DeveloperPreviewBanner from "@/components/dev/DeveloperPreviewBanner";
 import { useDeveloperPreview } from "@/components/dev/DeveloperPreviewProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function HomeDashboard({
   shifts,
@@ -42,6 +43,7 @@ export default function HomeDashboard({
   setError: (msg: string | null) => void;
 }) {
   const { previewMode, isPreviewActive } = useDeveloperPreview();
+  const { userId } = useAuth();
 
   const realActiveShift = shifts.find((s) => s.status === "active" && !s.is_demo) || null;
   const realActiveSession =
@@ -118,7 +120,7 @@ export default function HomeDashboard({
     houseTaxPct: number,
     hourlyRate: number | null
   ) => {
-    if (!guardStart()) return;
+    if (!guardStart() || !userId) return;
     const { data, error: err } = await supabase
       .from("shifts")
       .insert({
@@ -130,6 +132,7 @@ export default function HomeDashboard({
         hourly_rate: hourlyRate,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
+        user_id: userId,
       })
       .select()
       .single();
@@ -151,7 +154,7 @@ export default function HomeDashboard({
     initial_buy_in: number;
     notes: string;
   }) => {
-    if (!guardStart()) return;
+    if (!guardStart() || !userId) return;
     setSaving(true);
     const { data: row, error: err } = await supabase
       .from("playing_sessions")
@@ -165,6 +168,7 @@ export default function HomeDashboard({
         initial_buy_in: data.initial_buy_in,
         notes: data.notes,
         status: "active",
+        user_id: userId,
       })
       .select()
       .single();

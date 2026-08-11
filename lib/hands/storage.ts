@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase";
-import { ensureHandUserId } from "./auth";
+import { ensureUserId } from "./auth";
 import { SavedHand, SavedHandFilters, SavedHandInput } from "./types";
 
 export async function fetchSavedHands(): Promise<{ data: SavedHand[]; error: string | null }> {
-  const userId = await ensureHandUserId();
+  const userId = await ensureUserId();
   if (!userId) return { data: [], error: "Could not authenticate for saved hands." };
 
   const { data, error } = await supabase
@@ -19,7 +19,7 @@ export async function fetchSavedHands(): Promise<{ data: SavedHand[]; error: str
 export async function saveHand(
   input: SavedHandInput
 ): Promise<{ data: SavedHand | null; error: string | null }> {
-  const userId = await ensureHandUserId();
+  const userId = await ensureUserId();
   if (!userId) return { data: null, error: "Could not authenticate for saved hands." };
 
   const { data, error } = await supabase
@@ -33,7 +33,7 @@ export async function saveHand(
 }
 
 export async function deleteSavedHand(id: string): Promise<{ error: string | null }> {
-  const userId = await ensureHandUserId();
+  const userId = await ensureUserId();
   if (!userId) return { error: "Could not authenticate for saved hands." };
 
   const { error } = await supabase.from("saved_hands").delete().eq("id", id).eq("user_id", userId);

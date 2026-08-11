@@ -6,9 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export type DeveloperPreviewMode = "none" | "empty" | "dealer" | "gaming";
 
@@ -31,11 +33,19 @@ function readStoredMode(): DeveloperPreviewMode {
 }
 
 export function DeveloperPreviewProvider({ children }: { children: ReactNode }) {
+  const { userId, ready } = useAuth();
   const [previewMode, setPreviewModeState] = useState<DeveloperPreviewMode>("none");
+  const lastUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    setPreviewModeState(readStoredMode());
-  }, []);
+    if (!ready) return;
+    if (lastUserIdRef.current && userId && lastUserIdRef.current !== userId) {
+      setPreviewModeState("none");
+    } else if (lastUserIdRef.current === null) {
+      setPreviewModeState(readStoredMode());
+    }
+    lastUserIdRef.current = userId;
+  }, [ready, userId]);
 
   const setPreviewMode = useCallback((mode: DeveloperPreviewMode) => {
     setPreviewModeState(mode);

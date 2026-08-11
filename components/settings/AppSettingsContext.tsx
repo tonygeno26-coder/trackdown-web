@@ -15,6 +15,7 @@ import {
   fetchOrCreateSettings,
   updateSettings,
 } from "@/lib/settings";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface AppSettingsContextValue {
   settings: AppSettings | null;
@@ -34,6 +35,7 @@ interface AppSettingsContextValue {
 const AppSettingsContext = createContext<AppSettingsContextValue | null>(null);
 
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
+  const { userId, ready } = useAuth();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,8 +60,13 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!ready || !userId) {
+      setSettings(null);
+      setLoading(!ready);
+      return;
+    }
     reload();
-  }, [reload]);
+  }, [ready, userId, reload]);
 
   const saveSettings = useCallback(
     async (updates: AppSettingsUpdate) => {

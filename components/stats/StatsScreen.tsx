@@ -13,6 +13,7 @@ import {
   netResult,
 } from "@/lib/playing";
 import { getGamingCategory, gamingCategoryLabel } from "@/lib/gaming";
+import { excludeDemoRecords } from "@/lib/data-filters";
 import DealingStats from "@/components/stats/DealingStats";
 import GamingStats from "@/components/stats/GamingStats";
 import TrackdownHeader from "@/components/TrackdownHeader";
@@ -28,8 +29,10 @@ export default function StatsScreen({
 }) {
   const [dateRange, setDateRange] = useState<PlayingDateRange>("all");
 
-  const completedShifts = shifts.filter((s) => s.status === "completed");
-  const completedSessions = playingSessions.filter((s) => s.status === "completed");
+  const completedShifts = excludeDemoRecords(shifts.filter((s) => s.status === "completed"));
+  const completedSessions = excludeDemoRecords(
+    playingSessions.filter((s) => s.status === "completed")
+  );
 
   const dealingFiltered = completedShifts.filter((s) => shiftInDateRange(s, dateRange));
   const dealingStats = computeDealingStats(dealingFiltered);
