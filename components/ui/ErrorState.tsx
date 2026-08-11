@@ -1,18 +1,24 @@
 "use client";
 
 import { AlertCircle, WifiOff } from "lucide-react";
-import { PrimaryButton, SecondaryButton } from "./Buttons";
+import { PrimaryButton } from "./Buttons";
 
 export function ErrorState({
   message,
   onRetry,
   offline,
+  diagnosticCode,
 }: {
   message: string;
   onRetry?: () => void;
   offline?: boolean;
+  diagnosticCode?: string | null;
 }) {
   const Icon = offline ? WifiOff : AlertCircle;
+  const showDiagnostic =
+    diagnosticCode &&
+    (process.env.NODE_ENV !== "production" || diagnosticCode.startsWith("AUTH_"));
+
   return (
     <div
       className="flex min-h-[200px] flex-col items-center justify-center gap-4 px-6 py-10 text-center"
@@ -26,6 +32,11 @@ export function ErrorState({
           {offline ? "You're offline" : "Something went wrong"}
         </p>
         <p className="mt-2 text-[14px] leading-relaxed text-td-muted">{message}</p>
+        {showDiagnostic && (
+          <p className="mt-3 font-mono text-[11px] tracking-wide text-td-muted/80">
+            {diagnosticCode}
+          </p>
+        )}
       </div>
       {onRetry && (
         <div className="w-full max-w-[280px] space-y-2">
