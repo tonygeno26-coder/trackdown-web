@@ -1,22 +1,24 @@
 "use client";
 
 import { Coffee } from "lucide-react";
-import { DownBlock, ShiftType } from "@/lib/types";
+import { DownBlock, Shift } from "@/lib/types";
 import { fmtMoney, fmtTime, isNowWithin } from "@/lib/blocks";
+import { isCombinedShift, isTournamentBlock, resolveBlockSegment } from "@/lib/shift-segments";
 
 export default function BlockRow({
   block,
-  type,
+  shift,
   onTap,
   live = false,
 }: {
   block: DownBlock;
-  type: ShiftType;
+  shift: Shift;
   onTap: () => void;
   live?: boolean;
 }) {
   const current = live && block.status === "pending" && isNowWithin(block.scheduledStart, block.scheduledEnd);
-  const isTournament = type === "tournament";
+  const isTournament = isTournamentBlock(block, shift);
+  const segment = isCombinedShift(shift) ? resolveBlockSegment(block, shift) : null;
 
   return (
     <button
@@ -35,6 +37,11 @@ export default function BlockRow({
       </div>
 
       <div className="flex-1 min-w-0 flex flex-col">
+        {segment && block.status !== "pending" && (
+          <span className="text-[9.5px] font-bold uppercase tracking-wide text-td-muted mb-0.5">
+            {segment === "tournament" ? "Tournament" : "Cash"}
+          </span>
+        )}
         {block.status === "break" ? (
           <span className="text-sm font-semibold flex items-center gap-1.5 text-td-muted">
             <Coffee size={14} /> Break

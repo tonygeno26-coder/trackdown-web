@@ -7,6 +7,7 @@ import { SettingsField, SettingsSection, settingsInputClass } from "@/components
 const SHIFT_TYPES: { key: ShiftType; label: string }[] = [
   { key: "tournament", label: "Tournament" },
   { key: "cash", label: "Cash" },
+  { key: "tournament_cash", label: "T + Cash" },
   { key: "homegame", label: "Home Game" },
 ];
 
@@ -25,7 +26,7 @@ export default function DealingDefaultsSettings({
       description="Pre-fill dealer shift options. Cash and home-game downs remain 30 minutes."
     >
       <SettingsField label="Default Dealer Shift Type">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {SHIFT_TYPES.map(({ key, label }) => (
             <button
               key={key}

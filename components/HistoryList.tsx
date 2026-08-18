@@ -4,9 +4,16 @@ import { useState, useMemo } from "react";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import { Shift, DownBlock } from "@/lib/types";
 import { fmtMoney, fmtDateHeader, fmtTime, fmtHourlyRate, fmtMoneyPrecise, estimatedTournamentEarnings } from "@/lib/blocks";
+import {
+  combinedShiftEarnings,
+  isCombinedShift,
+  segmentBreakdownLabel,
+  shiftTypeLabel,
+  shiftTotalEarnings,
+} from "@/lib/shift-segments";
 import BlockRow from "./BlockRow";
 
-type TypeFilter = "all" | "tournament" | "cash" | "homegame";
+type TypeFilter = "all" | "tournament" | "cash" | "homegame" | "tournament_cash";
 type SettledFilter = "all" | "settled" | "unsettled";
 
 export default function HistoryList({
@@ -38,6 +45,7 @@ export default function HistoryList({
     { key: "all", label: "All" },
     { key: "tournament", label: "Tournament" },
     { key: "cash", label: "Cash" },
+    { key: "tournament_cash", label: "T + Cash" },
     { key: "homegame", label: "Home Game" },
   ];
 
@@ -88,13 +96,14 @@ export default function HistoryList({
 
       {filtered.map((shift) => {
         const isOpen = !!expanded[shift.id];
-        const total = shift.is_lump_sum
-          ? shift.lump_sum_tips || 0
-          : shift.blocks.reduce((s, b) => s + (b.status === "done" ? b.tips : 0), 0);
         const done = shift.blocks.filter((b) => b.status === "done").length;
         const doneBlocks = shift.blocks.filter((b) => b.status === "done");
+        const isCombined = isCombinedShift(shift);
         const tournamentEarnings =
           shift.type === "tournament" ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
+        const combined = isCombined ? combinedShiftEarnings(shift) : null;
+        const breakdown = segmentBreakdownLabel(shift);
+        const earningsTotal = shiftTotalEarnings(shift);
 
         return (
           <div key={shift.id} className="border-b border-td-border pb-1 last:border-none">
@@ -106,21 +115,32 @@ export default function HistoryList({
               <div className="flex flex-col items-start flex-1">
                 <span className="text-sm font-semibold">
                   {shift.title ? `${shift.title} · ` : ""}
-                  {fmtDateHeader(shift.start_time)} ·{" "}
-                  {shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash" : "Home Game"}
+                  {fmtDateHeader(shift.start_time)} · {shiftTypeLabel(shift.type)}
                 </span>
                 <span className="text-[11.5px] text-td-muted">
                   {fmtTime(shift.start_time)} · {shift.down_length}m downs ·{" "}
                   {shift.type === "tournament"
                     ? `${done} downs logged`
-                    : shift.is_lump_sum
-                    ? "logged as one total"
-                    : `${done}/${shift.blocks.length} logged`}
+                    : isCombined
+                      ? breakdown ?? `${done} downs logged`
+                      : shift.is_lump_sum
+                        ? "logged as one total"
+                        : `${done}/${shift.blocks.length} logged`}
                 </span>
                 {shift.type === "tournament" && shift.hourly_rate != null && tournamentEarnings != null && (
                   <span className="text-[11px] font-semibold mt-0.5 text-td-muted">
                     {fmtHourlyRate(shift.hourly_rate)} · est.{" "}
                     <span className="text-td-goldsoft">{fmtMoneyPrecise(tournamentEarnings)}</span>
+                  </span>
+                )}
+                {isCombined && combined && (
+                  <span className="text-[11px] font-semibold mt-0.5 text-td-muted">
+                    Tournament est.{" "}
+                    <span className="text-td-goldsoft">
+                      {combined.tournament != null ? fmtMoneyPrecise(combined.tournament) : "—"}
+                    </span>
+                    {" · "}
+                    Cash <span className="text-td-goldsoft">{fmtMoneyPrecise(combined.cash)}</span>
                   </span>
                 )}
                 {shift.type === "homegame" && shift.settled_status && (
@@ -141,15 +161,18 @@ export default function HistoryList({
                 )}
               </div>
               <span className="font-mono font-semibold text-td-goldsoft text-[15px]">
-                {shift.type === "tournament" ? `${done} downs` : fmtMoney(total)}
+                {shift.type === "tournament" ? `${done} downs` : fmtMoneyPrecise(earningsTotal)}
               </span>
             </button>
 
             {isOpen && (
               <div className="flex flex-col gap-2 my-2.5">
+                {isCombined && breakdown && (
+                  <p className="text-[12.5px] font-semibold text-td-muted px-1">{breakdown}</p>
+                )}
                 {!shift.is_lump_sum &&
                   doneBlocks.map((b) => (
-                    <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(shift, b)} />
+                    <BlockRow key={b.id} block={b} shift={shift} onTap={() => onBlockTap(shift, b)} />
                   ))}
                 {!shift.is_lump_sum && doneBlocks.length === 0 && (
                   <p className="text-[12.5px] text-td-muted py-2 px-1">No downs logged this shift.</p>

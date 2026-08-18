@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Coffee, Plus, PenLine } from "lucide-react";
+import { ChevronDown, Coffee, Plus, PenLine } from "lucide-react";
 import { motion } from "framer-motion";
-import { Shift, DownBlock } from "@/lib/types";
+import { Shift, DownBlock, DealingSegment } from "@/lib/types";
 import {
   fmtMoney,
   fmtMoneyPrecise,
@@ -11,9 +11,14 @@ import {
   fmtTime,
   isNowWithin,
   netTips,
-  estimatedTournamentEarnings,
 } from "@/lib/blocks";
 import { formatDuration, hoursPlayed } from "@/lib/playing";
+import {
+  combinedShiftEarnings,
+  isCombinedShift,
+  resolveActiveSegment,
+  shiftTypeLabel,
+} from "@/lib/shift-segments";
 import {
   SurfaceCard,
   PrimaryButton,
@@ -25,6 +30,7 @@ import {
 } from "@/components/ui";
 import BlockRow from "@/components/BlockRow";
 import TrackdownHeader from "@/components/TrackdownHeader";
+import { estimatedTournamentEarnings } from "@/lib/blocks";
 
 function findTargetBlock(shift: Shift): { block: DownBlock; label: string } | null {
   const pending = shift.blocks.filter((b) => b.status === "pending");
@@ -48,6 +54,7 @@ export default function DealerCockpit({
   onExtend,
   onLogLumpSum,
   onBlockTap,
+  onSegmentSwitch,
 }: {
   shift: Shift;
   total: number;
@@ -59,6 +66,7 @@ export default function DealerCockpit({
   onExtend: (minutes: number) => void;
   onLogLumpSum: () => void;
   onBlockTap: (block: DownBlock) => void;
+  onSegmentSwitch?: (segment: DealingSegment) => void;
 }) {
   const [, tick] = useState(0);
   const [extendOpen, setExtendOpen] = useState(false);
@@ -70,15 +78,22 @@ export default function DealerCockpit({
 
   const target = useMemo(() => findTargetBlock(shift), [shift]);
   const progress = shift.blocks.length > 0 ? doneCount / shift.blocks.length : 0;
-  const isTournament = shift.type === "tournament";
-  const typeLabel =
-    shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game";
+  const activeSegment = resolveActiveSegment(shift);
+  const isTournamentOnly = shift.type === "tournament";
+  const isCombined = isCombinedShift(shift);
+  const typeLabel = shiftTypeLabel(shift.type);
   const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
   const durationHours = hoursPlayed(shift.start_time, null);
-  const estimatedEarnings = isTournament
+  const estimatedEarnings = isTournamentOnly
     ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate)
     : null;
+  const combinedEarnings = isCombined ? combinedShiftEarnings(shift) : null;
   const currentDownNumber = doneCount + 1;
+
+  const toggleSegment = () => {
+    if (!onSegmentSwitch || !isCombined) return;
+    onSegmentSwitch(activeSegment === "tournament" ? "cash" : "tournament");
+  };
 
   return (
     <motion.div {...fadeSlide} className="space-y-5 pb-4">
@@ -110,6 +125,16 @@ export default function DealerCockpit({
               {Math.min(currentDownNumber, shift.blocks.length)}
             </p>
             <p className="mt-1 text-[11px] text-td-muted">of {shift.blocks.length} scheduled</p>
+            {isCombined && onSegmentSwitch && (
+              <button
+                type="button"
+                onClick={toggleSegment}
+                className="mt-2 flex min-h-[36px] items-center gap-1 rounded-lg border border-td-gold/50 bg-td-gold/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-td-goldsoft hover:border-td-gold"
+              >
+                Dealing: {activeSegment === "tournament" ? "Tournament" : "Cash Game"}
+                <ChevronDown size={12} aria-hidden />
+              </button>
+            )}
           </div>
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[1px] text-td-muted">Duration</p>
@@ -122,7 +147,30 @@ export default function DealerCockpit({
           </div>
         </div>
 
-        {isTournament ? (
+        {isCombined && combinedEarnings ? (
+          <div className="mt-4 space-y-2">
+            <div className="rounded-xl border border-td-border/70 bg-td-surface2/50 px-3 py-3 text-center">
+              <p className="text-[10px] uppercase tracking-[1px] text-td-muted">Shift Total</p>
+              <div className="mt-1">
+                <MoneyValue amount={fmtMoneyPrecise(combinedEarnings.total)} positive size="lg" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-td-border/70 bg-td-surface2/50 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-[1px] text-td-muted">Tournament (est.)</p>
+                <p className="mt-1 font-mono text-[14px] font-semibold text-td-goldsoft">
+                  {combinedEarnings.tournament != null ? fmtMoneyPrecise(combinedEarnings.tournament) : "—"}
+                </p>
+              </div>
+              <div className="rounded-xl border border-td-border/70 bg-td-surface2/50 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-[1px] text-td-muted">Cash Tips</p>
+                <p className="mt-1 font-mono text-[14px] font-semibold text-td-goldsoft">
+                  {fmtMoneyPrecise(combinedEarnings.cash)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : isTournamentOnly ? (
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-td-border/70 bg-td-surface2/50 px-3 py-2.5">
               <p className="text-[10px] uppercase tracking-[1px] text-td-muted">Hourly Rate</p>
@@ -155,6 +203,11 @@ export default function DealerCockpit({
       {target ? (
         <PrimaryButton session onClick={() => onLogDown(target.block)}>
           {target.label}
+          {isCombined && (
+            <span className="ml-1 text-[11px] font-normal opacity-80">
+              ({activeSegment === "tournament" ? "Tournament" : "Cash"})
+            </span>
+          )}
         </PrimaryButton>
       ) : (
         <p className="text-center text-[13px] text-td-muted">All downs logged for this shift.</p>
@@ -169,7 +222,7 @@ export default function DealerCockpit({
         </div>
       )}
 
-      {!isTournament && (
+      {!isTournamentOnly && !isCombined && (
         <SecondaryButton onClick={onLogLumpSum}>
           <PenLine size={16} aria-hidden />
           {shift.is_lump_sum ? "Edit Total" : "Log Entire Shift"}
@@ -206,7 +259,7 @@ export default function DealerCockpit({
       <div className="space-y-2 pt-1">
         <SectionHeader title="All Downs" />
         {shift.blocks.map((b) => (
-          <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(b)} live />
+          <BlockRow key={b.id} block={b} shift={shift} onTap={() => onBlockTap(b)} live />
         ))}
       </div>
     </motion.div>
