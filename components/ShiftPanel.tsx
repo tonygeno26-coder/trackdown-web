@@ -1,9 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, PenLine } from "lucide-react";
-import { Shift, DownBlock } from "@/lib/types";
+import { ChevronDown, Plus, PenLine } from "lucide-react";
+import { Shift, DownBlock, DealingSegment } from "@/lib/types";
 import { fmtMoney, netTips, fmtHourlyRate, fmtMoneyPrecise, estimatedTournamentEarnings } from "@/lib/blocks";
+import {
+  combinedShiftEarnings,
+  isCombinedShift,
+  resolveActiveSegment,
+  shiftTypeLabel,
+} from "@/lib/shift-segments";
 import BlockRow from "./BlockRow";
 import AddTimeSheet from "./AddTimeSheet";
 import { SurfaceCard, ProgressBar } from "@/components/ui";
@@ -16,6 +22,7 @@ export default function ShiftPanel({
   onEndShift,
   onExtend,
   onLogLumpSum,
+  onSegmentSwitch,
 }: {
   shift: Shift;
   total: number;
@@ -24,14 +31,22 @@ export default function ShiftPanel({
   onEndShift: () => void;
   onExtend: (additionalMinutes: number) => void;
   onLogLumpSum: () => void;
+  onSegmentSwitch?: (segment: DealingSegment) => void;
 }) {
   const progress = doneCount / shift.blocks.length;
-  const isTournament = shift.type === "tournament";
+  const isTournamentOnly = shift.type === "tournament";
+  const isCombined = isCombinedShift(shift);
+  const activeSegment = resolveActiveSegment(shift);
   const net = shift.house_tax_pct > 0 ? netTips(total, shift.house_tax_pct) : total;
   const [extendOpen, setExtendOpen] = useState(false);
-  const typeLabel =
-    shift.type === "tournament" ? "Tournament" : shift.type === "cash" ? "Cash Game" : "Home Game";
-  const estimatedEarnings = isTournament ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
+  const typeLabel = shiftTypeLabel(shift.type);
+  const estimatedEarnings = isTournamentOnly ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
+  const combinedEarnings = isCombined ? combinedShiftEarnings(shift) : null;
+
+  const toggleSegment = () => {
+    if (!onSegmentSwitch || !isCombined) return;
+    onSegmentSwitch(activeSegment === "tournament" ? "cash" : "tournament");
+  };
 
   return (
     <>
@@ -50,7 +65,29 @@ export default function ShiftPanel({
 
         {shift.title && <div className="text-sm font-semibold text-td-cream mb-1">{shift.title}</div>}
 
-        {isTournament ? (
+        {isCombined && onSegmentSwitch && (
+          <button
+            type="button"
+            onClick={toggleSegment}
+            className="mb-3 flex min-h-[36px] items-center gap-1 rounded-lg border border-td-gold/50 bg-td-gold/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-td-goldsoft hover:border-td-gold"
+          >
+            Dealing: {activeSegment === "tournament" ? "Tournament" : "Cash Game"}
+            <ChevronDown size={12} aria-hidden />
+          </button>
+        )}
+
+        {isCombined && combinedEarnings ? (
+          <>
+            <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
+              {fmtMoneyPrecise(combinedEarnings.total)}
+            </span>
+            <span className="text-[12.5px] text-td-muted">
+              {doneCount} of {shift.blocks.length} downs logged · Tournament est.{" "}
+              {combinedEarnings.tournament != null ? fmtMoneyPrecise(combinedEarnings.tournament) : "—"} · Cash{" "}
+              {fmtMoneyPrecise(combinedEarnings.cash)}
+            </span>
+          </>
+        ) : isTournamentOnly ? (
           <>
             <span className="block font-mono font-semibold text-4xl text-td-goldsoft leading-tight">
               {doneCount}
@@ -89,7 +126,7 @@ export default function ShiftPanel({
 
         <ProgressBar value={doneCount} max={shift.blocks.length} className="mt-3.5" />
 
-        {!isTournament && (
+        {!isTournamentOnly && !isCombined && (
           <button
             onClick={onLogLumpSum}
             className="mt-3.5 w-full flex items-center justify-center gap-2 rounded-[10px] border border-td-border text-td-muted text-[13px] font-semibold py-2.5 hover:border-td-gold hover:text-td-goldsoft"
@@ -102,7 +139,7 @@ export default function ShiftPanel({
 
       <div className="flex flex-col gap-2">
         {shift.blocks.map((b) => (
-          <BlockRow key={b.id} block={b} type={shift.type} onTap={() => onBlockTap(b)} live />
+          <BlockRow key={b.id} block={b} shift={shift} onTap={() => onBlockTap(b)} live />
         ))}
 
         <div className="mt-1">

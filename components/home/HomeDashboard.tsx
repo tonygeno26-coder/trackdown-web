@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType } from "@/lib/types";
+import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType, DealingSegment } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
+import { resolveActiveSegment, shiftCashGrossTips } from "@/lib/shift-segments";
 import { GamingCategory, getGamingCategory } from "@/lib/gaming";
 import { saveHand } from "@/lib/hands/storage";
 import { SavedHandInput } from "@/lib/hands/types";
@@ -83,10 +84,7 @@ export default function HomeDashboard({
   const [handBuilderOpen, setHandBuilderOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const shiftTotal = (shift: Shift) =>
-    shift.is_lump_sum
-      ? shift.lump_sum_tips || 0
-      : shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
+  const shiftTotal = (shift: Shift) => shiftCashGrossTips(shift);
   const shiftDoneCount = (shift: Shift) => shift.blocks.filter((b) => b.status === "done").length;
 
   const guardPreview = () => {
@@ -130,6 +128,7 @@ export default function HomeDashboard({
         title,
         house_tax_pct: houseTaxPct,
         hourly_rate: hourlyRate,
+        active_segment: type === "tournament_cash" ? "tournament" : null,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
         user_id: userId,
@@ -195,9 +194,12 @@ export default function HomeDashboard({
 
   const quickBlockUpdate = async (block: DownBlock, update: Partial<DownBlock>) => {
     if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
+    const segment =
+      activeShift.type === "tournament_cash" ? resolveActiveSegment(activeShift) : undefined;
     const { blocks: nextBlocks, error: err } = await updateShiftBlock(activeShift.id, block.id, (b) => ({
       ...b,
       ...update,
+      ...(segment ? { segment } : {}),
     }));
     if (err || !nextBlocks) {
       setError(err ?? "Could not update down.");
@@ -234,6 +236,22 @@ export default function HomeDashboard({
     );
     setConfirmEndShift(false);
     return true;
+  };
+
+  const switchSegment = async (segment: DealingSegment) => {
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
+    if (activeShift.type !== "tournament_cash") return;
+    const { error: err } = await supabase
+      .from("shifts")
+      .update({ active_segment: segment })
+      .eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(
+      shifts.map((s) => (s.id === activeShift.id ? { ...s, active_segment: segment } : s))
+    );
   };
 
   const extendShift = async (additionalMinutes: number) => {
@@ -400,6 +418,7 @@ export default function HomeDashboard({
             onExtend={extendShift}
             onLogLumpSum={() => setLumpSumOpen(true)}
             onBlockTap={(block) => setBlockSheet({ shift: activeShift, block })}
+            onSegmentSwitch={switchSegment}
           />
         ) : activeSession ? (
           <GamingCockpit
@@ -431,7 +450,7 @@ export default function HomeDashboard({
 
       {blockSheet && (
         <BlockSheet
-          shiftType={blockSheet.shift.type}
+          shift={blockSheet.shift}
           block={blockSheet.block}
           onCancel={() => setBlockSheet(null)}
           onSave={saveBlock}

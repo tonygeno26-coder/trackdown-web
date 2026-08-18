@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Plus, Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { Shift, DownBlock, ShiftType } from "@/lib/types";
+import { Shift, DownBlock, ShiftType, DealingSegment } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
+import { resolveActiveSegment, shiftCashGrossTips } from "@/lib/shift-segments";
 import ShiftPanel from "@/components/ShiftPanel";
 import NewShiftModal from "@/components/NewShiftModal";
 import BlockSheet from "@/components/BlockSheet";
@@ -44,6 +45,7 @@ export default function DealingSection({
         title,
         house_tax_pct: houseTaxPct,
         hourly_rate: hourlyRate,
+        active_segment: type === "tournament_cash" ? "tournament" : null,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
       })
@@ -69,6 +71,21 @@ export default function DealingSection({
     }
     onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, blocks: nextBlocks } : s)));
     setBlockSheet(null);
+  };
+
+  const switchSegment = async (segment: DealingSegment) => {
+    if (!activeShift || activeShift.type !== "tournament_cash") return;
+    const { error: err } = await supabase
+      .from("shifts")
+      .update({ active_segment: segment })
+      .eq("id", activeShift.id);
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange(
+      shifts.map((s) => (s.id === activeShift.id ? { ...s, active_segment: segment } : s))
+    );
   };
 
   const endShift = async (
@@ -128,10 +145,7 @@ export default function DealingSection({
     setLumpSumOpen(false);
   };
 
-  const shiftTotal = (shift: Shift) =>
-    shift.is_lump_sum
-      ? shift.lump_sum_tips || 0
-      : shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
+  const shiftTotal = (shift: Shift) => shiftCashGrossTips(shift);
   const shiftDoneCount = (shift: Shift) => shift.blocks.filter((b) => b.status === "done").length;
 
   return (
@@ -161,6 +175,7 @@ export default function DealingSection({
           onEndShift={() => setConfirmEndShift(true)}
           onExtend={extendShift}
           onLogLumpSum={() => setLumpSumOpen(true)}
+          onSegmentSwitch={switchSegment}
         />
       )}
 
@@ -168,7 +183,7 @@ export default function DealingSection({
 
       {blockSheet && (
         <BlockSheet
-          shiftType={blockSheet.shift.type}
+          shift={blockSheet.shift}
           block={blockSheet.block}
           onCancel={() => setBlockSheet(null)}
           onSave={saveBlock}

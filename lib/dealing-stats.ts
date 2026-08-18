@@ -5,6 +5,10 @@ import {
   netTips,
   scheduledHoursFromBlocks,
 } from "./blocks";
+import {
+  combinedShiftEarnings,
+  isCombinedShift,
+} from "./shift-segments";
 import { hoursPlayed } from "./playing";
 
 export interface DealingStatsSummary {
@@ -25,6 +29,9 @@ function shiftGrossTips(shift: Shift): number {
 function shiftEarnings(shift: Shift): number {
   if (shift.type === "tournament") {
     return estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) || 0;
+  }
+  if (isCombinedShift(shift)) {
+    return combinedShiftEarnings(shift).total;
   }
   const gross = shiftGrossTips(shift);
   return shift.house_tax_pct > 0 ? netTips(gross, shift.house_tax_pct) : gross;
@@ -53,7 +60,11 @@ export function computeDealingStats(shifts: Shift[]): DealingStatsSummary {
 
     if (shift.type === "tournament") tournamentEarnings += earnings;
     else if (shift.type === "cash") cashTips += earnings;
-    else homeGameEarnings += earnings;
+    else if (isCombinedShift(shift)) {
+      const split = combinedShiftEarnings(shift);
+      tournamentEarnings += split.tournament ?? 0;
+      cashTips += split.cash;
+    } else homeGameEarnings += earnings;
   }
 
   const totalEarnings = tournamentEarnings + cashTips + homeGameEarnings;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Spade, Coffee, Home, Clock } from "lucide-react";
+import { Check, Spade, Coffee, Home, Clock, Layers } from "lucide-react";
 import { ShiftType } from "@/lib/types";
 import { useAppSettings } from "@/components/settings/AppSettingsContext";
 import { hourlyRateInputValue } from "@/lib/settings";
@@ -65,7 +65,7 @@ export default function NewShiftModal({
     appliedDefaults.current = true;
     if (settings.default_dealer_shift_type) {
       setType(settings.default_dealer_shift_type);
-      if (settings.default_dealer_shift_type === "tournament") {
+      if (settings.default_dealer_shift_type === "tournament" || settings.default_dealer_shift_type === "tournament_cash") {
         if (settings.default_tournament_down_length) {
           setLength(settings.default_tournament_down_length);
         }
@@ -85,7 +85,7 @@ export default function NewShiftModal({
 
   const selectType = (next: ShiftType) => {
     setType(next);
-    if (next === "tournament") {
+    if (next === "tournament" || next === "tournament_cash") {
       const settingsRate = hourlyRateInputValue(settings?.default_tournament_hourly_rate);
       setHourlyRate(settingsRate || readLastHourlyRate());
       if (settings?.default_tournament_down_length) {
@@ -97,7 +97,7 @@ export default function NewShiftModal({
   const handleCreate = () => {
     if (!type) return;
     let rate: number | null = null;
-    if (type === "tournament" && hourlyRate.trim()) {
+    if ((type === "tournament" || type === "tournament_cash") && hourlyRate.trim()) {
       const parsed = parseFloat(hourlyRate);
       if (!isNaN(parsed)) {
         rate = parsed;
@@ -106,7 +106,7 @@ export default function NewShiftModal({
     }
     onCreate(
       type,
-      type === "tournament" ? length : 30,
+      type === "tournament" || type === "tournament_cash" ? length : 30,
       buildShiftStartISO(),
       title,
       type === "homegame" ? parseFloat(taxPct) || 0 : 0,
@@ -141,6 +141,9 @@ export default function NewShiftModal({
             <ChoiceButton icon={Coffee} onClick={() => selectType("cash")}>
               Cash Game
             </ChoiceButton>
+            <ChoiceButton icon={Layers} onClick={() => selectType("tournament_cash")}>
+              Tournament + Cash Game
+            </ChoiceButton>
             <ChoiceButton icon={Home} onClick={() => selectType("homegame")}>
               Home Game
             </ChoiceButton>
@@ -148,7 +151,7 @@ export default function NewShiftModal({
         </>
       ) : (
         <div className="space-y-4">
-          {type === "tournament" && (
+          {(type === "tournament" || type === "tournament_cash") && (
             <>
               <p className="text-[14px] text-td-muted">Down length?</p>
               <div className="grid grid-cols-2 gap-3">
@@ -192,10 +195,18 @@ export default function NewShiftModal({
             </FormField>
           )}
 
-          <FormField label={type === "tournament" ? "Tournament / room name" : "Room / game name"}>
+          <FormField
+            label={
+              type === "tournament" || type === "tournament_cash"
+                ? "Tournament / room name"
+                : "Room / game name"
+            }
+          >
             <TextInput
               placeholder={
-                type === "tournament" ? "e.g. Wynn $200 Deepstack" : "e.g. Bellagio 1/2 NLH"
+                type === "tournament" || type === "tournament_cash"
+                  ? "e.g. Wynn $200 Deepstack"
+                  : "e.g. Bellagio 1/2 NLH"
               }
               value={title}
               onChange={(e) => setTitle(e.target.value)}

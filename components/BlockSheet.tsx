@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { Check, Coffee } from "lucide-react";
-import { DownBlock, ShiftType } from "@/lib/types";
+import { DownBlock, Shift } from "@/lib/types";
 import { fmtTime } from "@/lib/blocks";
+import { isTournamentStyleShift, resolveActiveSegment } from "@/lib/shift-segments";
 import { DealingBottomSheet } from "@/components/dealing/DealingUi";
 import {
   FormField,
@@ -15,47 +16,63 @@ import {
 } from "@/components/ui";
 
 export default function BlockSheet({
-  shiftType,
+  shift,
   block,
   onCancel,
   onSave,
 }: {
-  shiftType: ShiftType;
+  shift: Shift;
   block: DownBlock;
   onCancel: () => void;
   onSave: (updated: DownBlock) => void;
 }) {
-  const isTournament = shiftType === "tournament";
+  const activeSegment = resolveActiveSegment(shift);
+  const isTournament = isTournamentStyleShift(shift, activeSegment);
   const [table, setTable] = useState(block.table);
   const [game, setGame] = useState(block.game);
   const [tips, setTips] = useState(block.tips ? String(block.tips) : "");
   const [notes, setNotes] = useState(block.notes);
   const [saving, setSaving] = useState(false);
 
+  const tagSegment = (updated: DownBlock): DownBlock =>
+    shift.type === "tournament_cash" ? { ...updated, segment: activeSegment } : updated;
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
     setSaving(true);
-    onSave({
-      ...block,
-      status: "done",
-      table,
-      game,
-      tips: isTournament ? 0 : parseFloat(tips) || 0,
-      notes,
-    });
+    onSave(
+      tagSegment({
+        ...block,
+        status: "done",
+        table,
+        game,
+        tips: isTournament ? 0 : parseFloat(tips) || 0,
+        notes,
+      })
+    );
   };
 
   const markSkipped = () => {
     if (saving) return;
     setSaving(true);
-    onSave({ ...block, status: "skipped" });
+    onSave(tagSegment({ ...block, status: "skipped" }));
   };
 
   const markBreak = () => {
     if (saving) return;
     setSaving(true);
-    onSave({ ...block, status: "break", table: "", game: "", tips: 0, tournament: "", notes: "" });
+    onSave(
+      tagSegment({
+        ...block,
+        status: "break",
+        table: "",
+        game: "",
+        tips: 0,
+        tournament: "",
+        notes: "",
+      })
+    );
   };
 
   return (

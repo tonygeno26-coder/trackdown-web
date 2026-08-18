@@ -1,4 +1,5 @@
-export type ShiftType = "tournament" | "cash" | "homegame";
+export type ShiftType = "tournament" | "cash" | "homegame" | "tournament_cash";
+export type DealingSegment = "tournament" | "cash";
 export type BlockStatus = "pending" | "done" | "skipped" | "break";
 
 export interface DownBlock {
@@ -7,6 +8,8 @@ export interface DownBlock {
   scheduledStart: string; // ISO
   scheduledEnd: string; // ISO
   status: BlockStatus;
+  /** Which segment was active when this down was logged (combined shifts). */
+  segment?: DealingSegment;
   tournament: string;
   table: string;
   game: string;
@@ -29,6 +32,8 @@ export interface Shift {
   settled_amount: number | null;
   status: "active" | "completed";
   blocks: DownBlock[];
+  /** Active segment while dealing (combined shifts only). */
+  active_segment?: DealingSegment | null;
   created_at: string;
   is_demo?: boolean;
   user_id?: string;

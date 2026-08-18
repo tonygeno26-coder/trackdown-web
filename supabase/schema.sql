@@ -40,7 +40,11 @@ alter table shifts add column if not exists settled_amount numeric;
 alter table shifts add column if not exists hourly_rate numeric;
 
 alter table shifts drop constraint if exists shifts_type_check;
-alter table shifts add constraint shifts_type_check check (type in ('tournament', 'cash', 'homegame'));
+alter table shifts add constraint shifts_type_check check (type in ('tournament', 'cash', 'homegame', 'tournament_cash'));
+
+alter table shifts add column if not exists active_segment text;
+alter table shifts drop constraint if exists shifts_active_segment_check;
+alter table shifts add constraint shifts_active_segment_check check (active_segment is null or active_segment in ('tournament', 'cash'));
 
 -- Playing sessions (separate from dealer shifts)
 create table if not exists playing_sessions (

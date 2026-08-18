@@ -87,7 +87,7 @@ export default function HistoryScreen({
 
       {blockSheet && (
         <BlockSheet
-          shiftType={blockSheet.shift.type}
+          shift={blockSheet.shift}
           block={blockSheet.block}
           onCancel={() => setBlockSheet(null)}
           onSave={saveBlock}
