@@ -3,6 +3,8 @@
 import { useState } from "react";
 import TrainLanding from "@/components/train/TrainLanding";
 import TrainingProgress from "@/components/train/TrainingProgress";
+import DealerTrainingLanding from "@/components/train/dealer/DealerTrainingLanding";
+import DealingProcedureChecklist from "@/components/train/dealer/DealingProcedureChecklist";
 import DealerAcademyHome from "@/components/train/dealer/DealerAcademyHome";
 import DealerProgressDashboard from "@/components/train/dealer/DealerProgressDashboard";
 import DealingTips from "@/components/train/dealer/DealingTips";
@@ -14,6 +16,7 @@ import ProcedureQuizTrainer from "@/components/train/dealer/ProcedureQuizTrainer
 import BoardReadingTrainer from "@/components/train/dealer/BoardReadingTrainer";
 import HiLoTrainer from "@/components/train/dealer/HiLoTrainer";
 import SpeedDrillTrainer from "@/components/train/dealer/SpeedDrillTrainer";
+import PlayerTrainingHome from "@/components/train/player/PlayerTrainingHome";
 import PokerTrainingHome from "@/components/train/gaming/PokerTrainingHome";
 import PokerDecisionSimulator from "@/components/train/gaming/PokerDecisionSimulator";
 import PotOddsTrainer from "@/components/train/gaming/PotOddsTrainer";
@@ -31,9 +34,13 @@ import { AdaptiveTopic, BlackjackTopic, PokerTopic, TrainerRoute } from "@/lib/t
 import { BLACKJACK_TOPICS, POKER_TOPICS } from "@/lib/training/adaptive-topics";
 import { BlackjackTrainingMode } from "@/lib/training/blackjack";
 import { DealerModuleKey } from "@/lib/training/dealer-types";
+import { DealingProcedureGame } from "@/lib/training/dealing-procedures";
 
 type TrainView =
   | "landing"
+  | "dealer-training"
+  | "procedure-checklist"
+  | "player-training"
   | "progress"
   | "dealer-home"
   | "dealer-dashboard"
@@ -61,6 +68,7 @@ type TrainView =
 export default function TrainScreen() {
   const [view, setView] = useState<TrainView>("landing");
   const [stack, setStack] = useState<TrainView[]>([]);
+  const [procedureGame, setProcedureGame] = useState<DealingProcedureGame>("holdem");
   const [blackjackMode, setBlackjackMode] = useState<BlackjackTrainingMode>("random");
   const [adaptiveTopic, setAdaptiveTopic] = useState<AdaptiveTopic | undefined>();
   const [solverUnlocked, setSolverUnlocked] = useState(() => isSolverProUnlocked());
@@ -77,6 +85,11 @@ export default function TrainScreen() {
       setView(prev);
       return s.slice(0, -1);
     });
+  };
+
+  const openProcedureChecklist = (game: DealingProcedureGame) => {
+    setProcedureGame(game);
+    navigate("procedure-checklist");
   };
 
   const navigateDealerModule = (key: DealerModuleKey) => {
@@ -155,7 +168,25 @@ export default function TrainScreen() {
     case "landing":
       return (
         <TrainLanding
-          onDealer={() => navigate("dealer-home")}
+          onDealerTraining={() => navigate("dealer-training")}
+          onPlayerTraining={() => navigate("player-training")}
+        />
+      );
+    case "dealer-training":
+      return (
+        <DealerTrainingLanding
+          onBack={goBack}
+          onProcedureChecklist={openProcedureChecklist}
+          onAcademy={() => navigate("dealer-home")}
+          onAdaptivePractice={navigateAdaptive}
+        />
+      );
+    case "procedure-checklist":
+      return <DealingProcedureChecklist game={procedureGame} onBack={goBack} />;
+    case "player-training":
+      return (
+        <PlayerTrainingHome
+          onBack={goBack}
           onPoker={() => navigate("poker-home")}
           onBlackjack={() => navigate("blackjack-home")}
           onSolverPro={() => {
