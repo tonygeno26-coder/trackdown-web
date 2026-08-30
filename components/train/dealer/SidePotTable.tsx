@@ -4,7 +4,13 @@ import { SidePotPlayerInput } from "@/lib/training/dealer-types";
 import { calculateSidePots } from "@/lib/training/side-pot";
 import { SurfaceCard } from "@/components/ui";
 
-export default function SidePotTable({ players }: { players: SidePotPlayerInput[] }) {
+export default function SidePotTable({
+  players,
+  hideLayers = false,
+}: {
+  players: SidePotPlayerInput[];
+  hideLayers?: boolean;
+}) {
   const calc = calculateSidePots(players);
   return (
     <SurfaceCard className="overflow-hidden p-0">
@@ -25,7 +31,7 @@ export default function SidePotTable({ players }: { players: SidePotPlayerInput[
           </div>
         ))}
       </div>
-      {calc.layers.length > 0 && (
+      {!hideLayers && calc.layers.length > 0 && (
         <div className="border-t border-td-border bg-td-bg/40 px-4 py-3">
           <p className="mb-2 text-[11px] font-semibold uppercase text-td-muted">Pot layers</p>
           {calc.layers.map((l, i) => (
