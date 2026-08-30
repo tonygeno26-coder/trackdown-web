@@ -1,4 +1,4 @@
-export type DealingProcedureGame = "holdem" | "omaha" | "mixed";
+export type DealingProcedureGame = "mechanics" | "holdem" | "omaha" | "mixed";
 
 export interface DealingProcedureItem {
   id: string;
@@ -6,10 +6,30 @@ export interface DealingProcedureItem {
   detail: string;
 }
 
+/** Display order: foundational mechanics first, then game-specific sections. */
+export const DEALING_PROCEDURE_GAME_ORDER: DealingProcedureGame[] = [
+  "mechanics",
+  "holdem",
+  "omaha",
+  "mixed",
+];
+
+export const GAME_SPECIFIC_PROCEDURE_GAMES: DealingProcedureGame[] = [
+  "holdem",
+  "omaha",
+  "mixed",
+];
+
 export const DEALING_PROCEDURE_GAME_META: Record<
   DealingProcedureGame,
-  { title: string; description: string }
+  { title: string; description: string; foundational?: boolean }
 > = {
+  mechanics: {
+    title: "Dealer Mechanics",
+    description:
+      "Start here — foundational deck handling, pitching, burns, and table procedures shared across every game.",
+    foundational: true,
+  },
   holdem: {
     title: "Hold'em",
     description: "No-limit Texas Hold'em dealing procedures from shuffle to showdown.",
@@ -25,13 +45,69 @@ export const DEALING_PROCEDURE_GAME_META: Record<
 };
 
 export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureItem[]> = {
-  holdem: [
+  mechanics: [
     {
-      id: "he-shuffle",
+      id: "me-shuffle",
       title: "Shuffle & cut",
       detail:
         "Wash, riffle shuffle at least three times, strip, and offer a cut to the player right of the button (or designated cut card position).",
     },
+    {
+      id: "me-spread",
+      title: "Spreading & deck check",
+      detail:
+        "Spread the deck face-up to verify 52 cards, check for marks or damage, and confirm no duplicates before shuffling.",
+    },
+    {
+      id: "me-pitch",
+      title: "Pitching technique",
+      detail:
+        "Deal one card at a time with consistent speed and placement. Protect hole cards — never flash or expose during the pitch.",
+    },
+    {
+      id: "me-cut-card",
+      title: "Cut card placement",
+      detail:
+        "Insert the cut card at least one full deck length from either end. The cut must leave enough cards for the deal and burns.",
+    },
+    {
+      id: "me-burn",
+      title: "Burn card discipline",
+      detail:
+        "Burn one card face-down before each community street (flop, turn, river). Keep burn cards protected in a separate stack.",
+    },
+    {
+      id: "me-all-in",
+      title: "All-in announcement",
+      detail:
+        "When a player is all-in, announce 'all-in' and the amount. Do not accept further action from that player on later streets.",
+    },
+    {
+      id: "me-side-pots",
+      title: "Side pot creation",
+      detail:
+        "When multiple all-ins exist at different stack depths, create main and side pots before continuing. Match each player's eligible amount and tag eligible players per layer.",
+    },
+    {
+      id: "me-muck",
+      title: "Muck protection",
+      detail:
+        "Players may muck without showing if beaten. Protect the muck — do not expose folded cards. Award pots only after hands are verified.",
+    },
+    {
+      id: "me-exposed",
+      title: "Exposed & boxed cards",
+      detail:
+        "Stop dealing immediately on an exposed or boxed card. Call the floor and follow house misdeal procedure before continuing.",
+    },
+    {
+      id: "me-floor",
+      title: "Floor calls & irregularities",
+      detail:
+        "When unsure about a ruling or deck state, call the floor early. Do not invent rulings or continue with an unresolved irregularity.",
+    },
+  ],
+  holdem: [
     {
       id: "he-button",
       title: "Move button & blinds",
@@ -45,40 +121,16 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
         "Deal one card at a time clockwise, starting left of the button. Each active player receives exactly two face-down cards.",
     },
     {
-      id: "he-burn-flop",
-      title: "Burn before flop",
+      id: "he-preflop-action",
+      title: "Preflop betting order",
       detail:
-        "Burn one card face-down before dealing the flop. Place three community cards face-up in the center.",
+        "First action is the player left of the big blind (under the gun). Action proceeds clockwise through the big blind option.",
     },
     {
       id: "he-flop-action",
-      title: "Flop betting order",
+      title: "Postflop betting order",
       detail:
-        "First action is the first active player left of the button. Action proceeds clockwise. Announce bets and raises clearly.",
-    },
-    {
-      id: "he-burn-turn",
-      title: "Burn before turn",
-      detail:
-        "Burn one card before placing the fourth community card beside the flop — never intermix with the flop.",
-    },
-    {
-      id: "he-burn-river",
-      title: "Burn before river",
-      detail:
-        "Burn one card before dealing the fifth and final community card. Keep burn cards protected and stacked.",
-    },
-    {
-      id: "he-all-in",
-      title: "All-in announcement",
-      detail:
-        "When a player is all-in, announce 'all-in' and the amount. Do not accept further action from that player on later streets.",
-    },
-    {
-      id: "he-side-pots",
-      title: "Side pot creation",
-      detail:
-        "When multiple all-ins exist at different stack depths, create main and side pots before continuing. Match each player's eligible amount.",
+        "On flop, turn, and river, first action is the first active player left of the button. Action proceeds clockwise.",
     },
     {
       id: "he-showdown",
@@ -86,26 +138,8 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
       detail:
         "Last aggressor on the final betting round shows first. If checked through, first active player left of the button shows first.",
     },
-    {
-      id: "he-muck",
-      title: "Muck losing hands",
-      detail:
-        "Players may muck without showing if beaten. Protect the muck — do not expose folded cards. Award pot only after hands are verified.",
-    },
-    {
-      id: "he-exposed",
-      title: "Exposed / boxed cards",
-      detail:
-        "Stop dealing immediately on an exposed card. Call the floor and follow house misdeal procedure before continuing.",
-    },
   ],
   omaha: [
-    {
-      id: "om-shuffle",
-      title: "Shuffle & cut",
-      detail:
-        "Same shuffle standards as Hold'em. Verify deck integrity before dealing four-card hands.",
-    },
     {
       id: "om-button",
       title: "Button & blinds",
@@ -125,28 +159,16 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
         "Track the pot for max raises. Announce 'pot' or the raise amount. Verify pot size before accepting a pot-sized raise.",
     },
     {
-      id: "om-burn-board",
-      title: "Burn before each board",
-      detail:
-        "Burn one card before flop, turn, and river — same burn discipline as Hold'em on each street.",
-    },
-    {
       id: "om-action",
       title: "Betting rounds",
       detail:
         "Four betting rounds: preflop, flop, turn, river. Preflop action starts left of the big blind; postflop starts left of the button.",
     },
     {
-      id: "om-all-in",
-      title: "All-in & partial calls",
+      id: "om-partial-call",
+      title: "Partial all-in calls",
       detail:
-        "Partial all-ins create side pots. Announce each all-in level. Players may only win from pots they contributed to.",
-    },
-    {
-      id: "om-side-pots",
-      title: "Side pot breakdown",
-      detail:
-        "Build pots from smallest to largest commitment. Tag eligible players per layer before awarding any pot.",
+        "When a short stack calls less than a full raise, reopening rules apply per house policy. Announce the partial call clearly.",
     },
     {
       id: "om-showdown",
@@ -155,16 +177,16 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
         "Players must use exactly two hole cards and three board cards. Verify hands before pushing pots; call the floor on disputes.",
     },
     {
+      id: "om-showdown-order",
+      title: "Showdown order",
+      detail:
+        "Last aggressor on the final betting round shows first. If checked through, first active player left of the button shows first.",
+    },
+    {
       id: "om-low-split",
       title: "Hi-Lo split awareness",
       detail:
         "In split formats, verify high and low qualifiers separately. Quartering and odd-chip rules apply per house policy.",
-    },
-    {
-      id: "om-exposed",
-      title: "Exposed cards & fouled deck",
-      detail:
-        "Extra or missing cards require an immediate stop. Do not continue until the floor resolves the deck state.",
     },
   ],
   mixed: [
@@ -208,7 +230,7 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
       id: "mx-transition",
       title: "Game change transition",
       detail:
-        "Complete the current hand before switching games. Shuffle and cut when moving between flop and stud formats.",
+        "Complete the current hand before switching games. Re-shuffle and cut when moving between flop and stud formats.",
     },
     {
       id: "mx-board-read",
@@ -227,12 +249,6 @@ export const DEALING_PROCEDURES: Record<DealingProcedureGame, DealingProcedureIt
       title: "Showdown order by game",
       detail:
         "Follow last-aggressor rules in flop games. In stud, high hand on board shows first unless house rules specify otherwise.",
-    },
-    {
-      id: "mx-procedure",
-      title: "Floor calls & irregularities",
-      detail:
-        "Mixed rotations have more edge cases. When unsure, call the floor early — do not invent rulings at the table.",
     },
   ],
 };

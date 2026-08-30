@@ -68,7 +68,7 @@ type TrainView =
 export default function TrainScreen() {
   const [view, setView] = useState<TrainView>("landing");
   const [stack, setStack] = useState<TrainView[]>([]);
-  const [procedureGame, setProcedureGame] = useState<DealingProcedureGame>("holdem");
+  const [procedureGame, setProcedureGame] = useState<DealingProcedureGame>("mechanics");
   const [blackjackMode, setBlackjackMode] = useState<BlackjackTrainingMode>("random");
   const [adaptiveTopic, setAdaptiveTopic] = useState<AdaptiveTopic | undefined>();
   const [solverUnlocked, setSolverUnlocked] = useState(() => isSolverProUnlocked());
