@@ -9,11 +9,14 @@ import {
   Spade,
   Layers,
   Shuffle,
+  Hand,
 } from "lucide-react";
 import { TrainHeader } from "@/components/train/TrainingUi";
 import { SurfaceCard, SectionHeader, ProgressBar } from "@/components/ui";
 import {
   DEALING_PROCEDURE_GAME_META,
+  DEALING_PROCEDURE_GAME_ORDER,
+  GAME_SPECIFIC_PROCEDURE_GAMES,
   DealingProcedureGame,
   procedureCount,
 } from "@/lib/training/dealing-procedures";
@@ -22,13 +25,11 @@ import {
   reviewedCountForGame,
 } from "@/lib/training/dealing-procedure-progress";
 import { buildAdaptiveDashboard } from "@/lib/training/adaptive-recommendations";
-import { trainerRouteForTopic } from "@/lib/training/adaptive-topics";
 import { FocusRecommendation, TrainerRoute } from "@/lib/training/adaptive-types";
 import AdaptiveFocusCard from "@/components/train/AdaptiveFocusCard";
 
-const PROCEDURE_GAMES: DealingProcedureGame[] = ["holdem", "omaha", "mixed"];
-
 const GAME_ICONS: Record<DealingProcedureGame, typeof Spade> = {
+  mechanics: Hand,
   holdem: Spade,
   omaha: Layers,
   mixed: Shuffle,
@@ -39,11 +40,13 @@ function ProcedureGameCard({
   expanded,
   onToggle,
   onOpen,
+  foundational = false,
 }: {
   game: DealingProcedureGame;
   expanded: boolean;
   onToggle: () => void;
   onOpen: () => void;
+  foundational?: boolean;
 }) {
   const meta = DEALING_PROCEDURE_GAME_META[game];
   const Icon = GAME_ICONS[game];
@@ -52,18 +55,32 @@ function ProcedureGameCard({
   const pct = total > 0 ? Math.round((reviewed / total) * 100) : 0;
 
   return (
-    <SurfaceCard feature className="overflow-hidden">
+    <SurfaceCard
+      feature
+      className={`overflow-hidden ${foundational ? "border-td-gold/50 ring-1 ring-td-gold/20" : ""}`}
+    >
       <button
         type="button"
         onClick={onToggle}
         className="flex w-full items-start gap-3 p-4 text-left"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-td-surface2 text-td-gold">
+        <span
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+            foundational ? "bg-td-gold/15 text-td-goldsoft" : "bg-td-surface2 text-td-gold"
+          }`}
+        >
           <Icon size={18} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-center justify-between gap-2">
-            <span className="text-[15px] font-bold text-td-cream">{meta.title}</span>
+            <span className="flex min-w-0 flex-wrap items-center gap-2">
+              <span className="text-[15px] font-bold text-td-cream">{meta.title}</span>
+              {foundational && (
+                <span className="rounded-full bg-td-gold/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-td-goldsoft">
+                  Start here
+                </span>
+              )}
+            </span>
             {expanded ? (
               <ChevronDown size={16} className="shrink-0 text-td-muted" />
             ) : (
@@ -80,7 +97,9 @@ function ProcedureGameCard({
       {expanded && (
         <div className="border-t border-td-border/60 px-4 pb-4 pt-3">
           <p className="mb-3 text-[12px] text-td-muted">
-            Reference checklist for {meta.title.toLowerCase()} dealing — mark items reviewed as you study.
+            {foundational
+              ? "Foundational checklist — master these before game-specific procedures."
+              : `Reference checklist for ${meta.title.toLowerCase()} dealing — mark items reviewed as you study.`}
           </p>
           <button
             type="button"
@@ -107,7 +126,7 @@ export default function DealerTrainingLanding({
   onAcademy: () => void;
   onAdaptivePractice: (route: TrainerRoute) => void;
 }) {
-  const [expanded, setExpanded] = useState<DealingProcedureGame | null>("holdem");
+  const [expanded, setExpanded] = useState<DealingProcedureGame | null>("mechanics");
   const [progress] = useState(() => migrateDealingProcedureProgress());
   const [dashboard, setDashboard] = useState(() => buildAdaptiveDashboard());
 
@@ -125,7 +144,7 @@ export default function DealerTrainingLanding({
   };
 
   const totalReviewed = progress.reviewedIds.length;
-  const totalItems = PROCEDURE_GAMES.reduce((n, g) => n + procedureCount(g), 0);
+  const totalItems = DEALING_PROCEDURE_GAME_ORDER.reduce((n, g) => n + procedureCount(g), 0);
 
   return (
     <div className="pb-28">
@@ -148,10 +167,24 @@ export default function DealerTrainingLanding({
 
       <SectionHeader title="Dealing Procedures" />
       <p className="mb-3 text-[13px] text-td-muted">
-        {totalReviewed} of {totalItems} procedures reviewed across all games.
+        {totalReviewed} of {totalItems} procedures reviewed across all categories.
+      </p>
+
+      <div className="mb-4">
+        <ProcedureGameCard
+          game="mechanics"
+          foundational
+          expanded={expanded === "mechanics"}
+          onToggle={() => setExpanded((e) => (e === "mechanics" ? null : "mechanics"))}
+          onOpen={() => onProcedureChecklist("mechanics")}
+        />
+      </div>
+
+      <p className="mb-3 text-[11px] font-semibold uppercase tracking-wide text-td-muted">
+        By game
       </p>
       <div className="mb-6 grid gap-3">
-        {PROCEDURE_GAMES.map((game) => (
+        {GAME_SPECIFIC_PROCEDURE_GAMES.map((game) => (
           <ProcedureGameCard
             key={game}
             game={game}
