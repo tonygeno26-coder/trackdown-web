@@ -6,6 +6,28 @@ import {
 
 export const DEALING_PROCEDURE_PROGRESS_KEY = "trackdown_dealing_procedures_v1";
 
+/** Map removed game-specific ids to consolidated Dealer Mechanics ids. */
+const LEGACY_PROCEDURE_ID_MAP: Record<string, string> = {
+  "he-shuffle": "me-shuffle",
+  "om-shuffle": "me-shuffle",
+  "he-burn-flop": "me-burn",
+  "he-burn-turn": "me-burn",
+  "he-burn-river": "me-burn",
+  "om-burn-board": "me-burn",
+  "he-all-in": "me-all-in",
+  "om-all-in": "me-all-in",
+  "he-side-pots": "me-side-pots",
+  "om-side-pots": "me-side-pots",
+  "he-muck": "me-muck",
+  "he-exposed": "me-exposed",
+  "om-exposed": "me-exposed",
+  "mx-procedure": "me-floor",
+};
+
+function normalizeProcedureId(id: string): string {
+  return LEGACY_PROCEDURE_ID_MAP[id] ?? id;
+}
+
 export interface DealingProcedureProgress {
   version: 1;
   reviewedIds: string[];
@@ -57,12 +79,17 @@ export function reviewedCountForGame(
   return p.reviewedIds.filter((id) => ids.has(id)).length;
 }
 
-/** Prune unknown ids when procedure content changes */
+/** Remap legacy ids, dedupe, and prune unknown ids when procedure content changes */
 export function migrateDealingProcedureProgress(): DealingProcedureProgress {
   const valid = new Set(allProcedureIds());
   const current = loadDealingProcedureProgress();
-  const reviewedIds = current.reviewedIds.filter((id) => valid.has(id));
-  if (reviewedIds.length === current.reviewedIds.length) return current;
+  const reviewedIds = [
+    ...new Set(current.reviewedIds.map(normalizeProcedureId).filter((id) => valid.has(id))),
+  ];
+  const changed =
+    reviewedIds.length !== current.reviewedIds.length ||
+    reviewedIds.some((id, i) => id !== current.reviewedIds[i]);
+  if (!changed) return current;
   const next = { version: 1 as const, reviewedIds };
   saveDealingProcedureProgress(next);
   return next;
