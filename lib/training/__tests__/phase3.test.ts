@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateSidePots, countSidePots, distributeOddChips, quarterPot, splitPotEvenly, layersMatchExpected } from "@/lib/training/side-pot";
+import { calculateSidePots, countSidePots, distributeOddChips, quarterPot, splitPotEvenly, layersMatchExpected, gradeSidePotLayers } from "@/lib/training/side-pot";
 import { compareHands, evaluateHoldem, evaluatePlo, evaluateOmahaLow, findWinningHandIds } from "@/lib/training/hand-evaluator";
 import { pickAdaptiveDealerModule, buildTodaysFocus } from "@/lib/training/adaptive-dealer";
 import { createDefaultDealerSkillProgress, migrateDealerV2ToV3 } from "@/lib/training/dealer-progress";
@@ -42,6 +42,26 @@ describe("side pot calculations", () => {
       expect(layersMatchExpected(calc.layers, q.expectedLayers)).toBe(true);
       expect(calc.totalPot).toBe(q.totalPot);
     }
+  });
+
+  it("grades visual layer builder answers", () => {
+    const sp01 = SIDE_POT_QUESTIONS.find((q) => q.id === "sp-01")!;
+    const correct = gradeSidePotLayers(
+      [
+        { amount: 150, eligibleIds: ["a", "b", "c"] },
+        { amount: 100, eligibleIds: ["a", "c"] },
+      ],
+      sp01.expectedLayers
+    );
+    expect(correct.correct).toBe(true);
+    expect(correct.countMessage).toBeUndefined();
+
+    const wrongCount = gradeSidePotLayers(
+      [{ amount: 250, eligibleIds: ["a", "b", "c"] }],
+      sp01.expectedLayers
+    );
+    expect(wrongCount.correct).toBe(false);
+    expect(wrongCount.countMessage).toContain("combined");
   });
 });
 
