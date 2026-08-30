@@ -19,6 +19,7 @@ import { SurfaceCard, PrimaryButton, SectionHeader, StatCard, ProgressBar } from
 import { DealerModuleKey } from "@/lib/training/dealer-types";
 import { buildTodaysFocus, scoreDealerModules, MODULE_LABELS } from "@/lib/training/adaptive-dealer";
 import { loadTrainingProgress, accuracyPct, dealerOverallAccuracy } from "@/lib/training/progress";
+import { sidePotModuleDifficultyLabel } from "@/lib/training/side-pot-questions";
 
 const MODULES: {
   key: DealerModuleKey;
@@ -27,7 +28,7 @@ const MODULES: {
   icon: typeof BookOpen;
   difficulty: string;
 }[] = [
-  { key: "side-pot", title: "Side Pot Simulator", desc: "Multi-way all-in pot breakdowns.", icon: Calculator, difficulty: "intermediate" },
+  { key: "side-pot", title: "Side Pot Simulator", desc: "Multi-way all-in pot breakdowns.", icon: Calculator, difficulty: sidePotModuleDifficultyLabel() },
   { key: "misdeal", title: "Misdeal & Exposed Cards", desc: "Floor-call procedure scenarios.", icon: AlertTriangle, difficulty: "intermediate" },
   { key: "tournament-quiz", title: "Tournament Procedures", desc: "TDA-style best practices.", icon: ClipboardList, difficulty: "beginner" },
   { key: "cash-quiz", title: "Cash Game Procedures", desc: "Room-variation procedure drills.", icon: ClipboardList, difficulty: "beginner" },
