@@ -61,11 +61,7 @@ export default function ClaimScreen({ onDone }: { onDone: () => void }) {
   };
 
   if (shifts === null) {
-    return (
-      <div className="min-h-screen bg-td-bg">
-        <LoadingState message="Checking for past entries…" />
-      </div>
-    );
+    return <LoadingState message="Checking for past entries…" />;
   }
 
   return (
