@@ -1,13 +1,14 @@
 "use client";
 
-import { Home, BarChart3, GraduationCap, History, Settings } from "lucide-react";
+import { Home, BarChart3, GraduationCap, History, Settings, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 
-export type AppTab = "home" | "stats" | "train" | "history" | "settings";
+export type AppTab = "home" | "stats" | "pay" | "train" | "history" | "settings";
 
 const tabs: { key: AppTab; label: string; icon: typeof Home }[] = [
   { key: "home", label: "Home", icon: Home },
   { key: "stats", label: "Stats", icon: BarChart3 },
+  { key: "pay", label: "Pay", icon: Wallet },
   { key: "train", label: "Train", icon: GraduationCap },
   { key: "history", label: "History", icon: History },
   { key: "settings", label: "Settings", icon: Settings },

@@ -7,7 +7,9 @@ import {
 } from "./blocks";
 import {
   combinedShiftEarnings,
+  hostessNetTotal,
   isCombinedShift,
+  isHostessShift,
 } from "./shift-segments";
 import { hoursPlayed } from "./playing";
 
@@ -27,6 +29,9 @@ function shiftGrossTips(shift: Shift): number {
 }
 
 function shiftEarnings(shift: Shift): number {
+  if (isHostessShift(shift)) {
+    return hostessNetTotal(shift);
+  }
   if (shift.type === "tournament") {
     return estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) || 0;
   }

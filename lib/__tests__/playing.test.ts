@@ -40,6 +40,12 @@ function shift(start: string): Shift {
     settled_amount: null,
     status: "completed",
     blocks: [],
+    role: null,
+    tax_model: null,
+    tiered_threshold: 1000,
+    tiered_rate_below: 25,
+    tiered_rate_above: 50,
+    turn_ins: [],
     created_at: start,
   };
 }

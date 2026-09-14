@@ -29,6 +29,12 @@ export function createPreviewDealerShift(): Shift {
     settled_amount: null,
     status: "active",
     blocks,
+    role: null,
+    tax_model: null,
+    tiered_threshold: 1000,
+    tiered_rate_below: 25,
+    tiered_rate_above: 50,
+    turn_ins: [],
     created_at: startISO,
     is_demo: false,
   };

@@ -3,20 +3,29 @@
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { Shift, DownBlock, ShiftType, PlayingSession, PlayingSessionType, DealingSegment } from "@/lib/types";
+import { Shift, DownBlock, ShiftType, TaxModel, TurnIn, PlayingSession, PlayingSessionType, DealingSegment } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
 import { resolveActiveSegment, shiftCashGrossTips } from "@/lib/shift-segments";
 import { GamingCategory, getGamingCategory } from "@/lib/gaming";
 import { saveHand } from "@/lib/hands/storage";
 import { SavedHandInput } from "@/lib/hands/types";
-import { appendAdditionalBuyIn, replaceShiftBlock, updateShiftBlock } from "@/lib/db-mutations";
+import {
+  appendAdditionalBuyIn,
+  appendTurnIn,
+  deleteTurnIn,
+  replaceShiftBlock,
+  updateShiftBlock,
+  updateTurnIn,
+} from "@/lib/db-mutations";
 import HandBuilderModal from "@/components/train/my-hands/HandBuilderModal";
 import { createPreviewDealerShift, createPreviewGamingSession } from "@/lib/preview-data";
 import EmptyHomeState from "@/components/home/EmptyHomeState";
 import DealerCockpit from "@/components/home/DealerCockpit";
+import HostessPanel from "@/components/HostessPanel";
 import GamingCockpit from "@/components/home/GamingCockpit";
 import NewShiftModal from "@/components/NewShiftModal";
 import BlockSheet from "@/components/BlockSheet";
+import TurnInSheet from "@/components/TurnInSheet";
 import EndShiftModal from "@/components/EndShiftModal";
 import LumpSumModal from "@/components/LumpSumModal";
 import NewGamingSessionModal from "@/components/playing/NewGamingSessionModal";
@@ -74,6 +83,7 @@ export default function HomeDashboard({
   const [newShiftOpen, setNewShiftOpen] = useState(false);
   const [newGamingOpen, setNewGamingOpen] = useState(false);
   const [blockSheet, setBlockSheet] = useState<{ shift: Shift; block: DownBlock } | null>(null);
+  const [turnInSheet, setTurnInSheet] = useState<{ shift: Shift; turnIn: TurnIn } | null>(null);
   const [confirmEndShift, setConfirmEndShift] = useState(false);
   const [lumpSumOpen, setLumpSumOpen] = useState(false);
   const [addBuyInOpen, setAddBuyInOpen] = useState(false);
@@ -129,8 +139,47 @@ export default function HomeDashboard({
         house_tax_pct: houseTaxPct,
         hourly_rate: hourlyRate,
         active_segment: type === "tournament_cash" ? "tournament" : null,
+        role: type === "homegame" ? "dealer" : null,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
+        user_id: userId,
+      })
+      .select()
+      .single();
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange([data as Shift, ...shifts]);
+    setNewShiftOpen(false);
+  };
+
+  const createHostessShift = async (
+    title: string,
+    taxModel: TaxModel,
+    flatPct: number,
+    tieredThreshold: number,
+    tieredRateBelow: number,
+    tieredRateAbove: number
+  ) => {
+    if (!guardStart() || !userId) return;
+    const { data, error: err } = await supabase
+      .from("shifts")
+      .insert({
+        type: "homegame",
+        role: "hostess",
+        down_length: 30,
+        start_time: new Date().toISOString(),
+        title,
+        house_tax_pct: taxModel === "flat" ? flatPct : 0,
+        tax_model: taxModel,
+        tiered_threshold: tieredThreshold,
+        tiered_rate_below: tieredRateBelow,
+        tiered_rate_above: tieredRateAbove,
+        hourly_rate: null,
+        status: "active",
+        blocks: [],
+        turn_ins: [],
         user_id: userId,
       })
       .select()
@@ -190,6 +239,40 @@ export default function HomeDashboard({
     }
     onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, blocks: nextBlocks } : s)));
     setBlockSheet(null);
+  };
+
+  const logTurnIn = async (amount: number) => {
+    if (!guardMutation() || !activeShift || activeShift.id.startsWith("preview-")) return;
+    const { turnIns: nextTurnIns, error: err } = await appendTurnIn(activeShift.id, amount);
+    if (err || !nextTurnIns) {
+      setError(err ?? "Could not log turn-in.");
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === activeShift.id ? { ...s, turn_ins: nextTurnIns } : s)));
+  };
+
+  const saveTurnIn = async (updated: TurnIn) => {
+    if (!guardMutation() || !turnInSheet) return;
+    const shift = turnInSheet.shift;
+    const { turnIns: nextTurnIns, error: err } = await updateTurnIn(shift.id, updated.id, () => updated);
+    if (err || !nextTurnIns) {
+      setError(err ?? "Could not save turn-in.");
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, turn_ins: nextTurnIns } : s)));
+    setTurnInSheet(null);
+  };
+
+  const removeTurnIn = async () => {
+    if (!guardMutation() || !turnInSheet) return;
+    const shift = turnInSheet.shift;
+    const { turnIns: nextTurnIns, error: err } = await deleteTurnIn(shift.id, turnInSheet.turnIn.id);
+    if (err || !nextTurnIns) {
+      setError(err ?? "Could not delete turn-in.");
+      return;
+    }
+    onShiftsChange(shifts.map((s) => (s.id === shift.id ? { ...s, turn_ins: nextTurnIns } : s)));
+    setTurnInSheet(null);
   };
 
   const quickBlockUpdate = async (block: DownBlock, update: Partial<DownBlock>) => {
@@ -404,22 +487,32 @@ export default function HomeDashboard({
             onSaveHand={isPokerResult ? () => setHandBuilderOpen(true) : undefined}
           />
         ) : activeShift ? (
-          <DealerCockpit
-            key="dealer"
-            shift={activeShift}
-            total={shiftTotal(activeShift)}
-            doneCount={shiftDoneCount(activeShift)}
-            onLogDown={(block) => setBlockSheet({ shift: activeShift, block })}
-            onBreak={(block) =>
-              quickBlockUpdate(block, { status: "break", table: "", game: "", tips: 0, tournament: "", notes: "" })
-            }
-            onSkip={(block) => quickBlockUpdate(block, { status: "skipped" })}
-            onEndShift={() => setConfirmEndShift(true)}
-            onExtend={extendShift}
-            onLogLumpSum={() => setLumpSumOpen(true)}
-            onBlockTap={(block) => setBlockSheet({ shift: activeShift, block })}
-            onSegmentSwitch={switchSegment}
-          />
+          activeShift.role === "hostess" ? (
+            <HostessPanel
+              key="hostess"
+              shift={activeShift}
+              onLogTurnIn={logTurnIn}
+              onTurnInTap={(turnIn) => setTurnInSheet({ shift: activeShift, turnIn })}
+              onEndShift={() => setConfirmEndShift(true)}
+            />
+          ) : (
+            <DealerCockpit
+              key="dealer"
+              shift={activeShift}
+              total={shiftTotal(activeShift)}
+              doneCount={shiftDoneCount(activeShift)}
+              onLogDown={(block) => setBlockSheet({ shift: activeShift, block })}
+              onBreak={(block) =>
+                quickBlockUpdate(block, { status: "break", table: "", game: "", tips: 0, tournament: "", notes: "" })
+              }
+              onSkip={(block) => quickBlockUpdate(block, { status: "skipped" })}
+              onEndShift={() => setConfirmEndShift(true)}
+              onExtend={extendShift}
+              onLogLumpSum={() => setLumpSumOpen(true)}
+              onBlockTap={(block) => setBlockSheet({ shift: activeShift, block })}
+              onSegmentSwitch={switchSegment}
+            />
+          )
         ) : activeSession ? (
           <GamingCockpit
             key="gaming"
@@ -438,7 +531,13 @@ export default function HomeDashboard({
         )}
       </AnimatePresence>
 
-      {newShiftOpen && <NewShiftModal onCancel={() => setNewShiftOpen(false)} onCreate={createShift} />}
+      {newShiftOpen && (
+        <NewShiftModal
+          onCancel={() => setNewShiftOpen(false)}
+          onCreate={createShift}
+          onCreateHostess={createHostessShift}
+        />
+      )}
 
       {newGamingOpen && (
         <NewGamingSessionModal
@@ -454,6 +553,15 @@ export default function HomeDashboard({
           block={blockSheet.block}
           onCancel={() => setBlockSheet(null)}
           onSave={saveBlock}
+        />
+      )}
+
+      {turnInSheet && (
+        <TurnInSheet
+          turnIn={turnInSheet.turnIn}
+          onCancel={() => setTurnInSheet(null)}
+          onSave={saveTurnIn}
+          onDelete={removeTurnIn}
         />
       )}
 
