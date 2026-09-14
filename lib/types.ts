@@ -1,6 +1,14 @@
 export type ShiftType = "tournament" | "cash" | "homegame" | "tournament_cash";
 export type DealingSegment = "tournament" | "cash";
 export type BlockStatus = "pending" | "done" | "skipped" | "break";
+export type ShiftRole = "dealer" | "hostess";
+export type TaxModel = "flat" | "tiered";
+
+export interface TurnIn {
+  id: string;
+  amount: number;
+  timestamp: string; // ISO
+}
 
 export interface DownBlock {
   id: string;
@@ -34,8 +42,22 @@ export interface Shift {
   blocks: DownBlock[];
   /** Active segment while dealing (combined shifts only). */
   active_segment?: DealingSegment | null;
+  role: ShiftRole | null;
+  tax_model: TaxModel | null;
+  tiered_threshold: number;
+  tiered_rate_below: number;
+  tiered_rate_above: number;
+  turn_ins: TurnIn[];
   created_at: string;
   is_demo?: boolean;
+  user_id?: string;
+}
+
+export interface WeeklyRate {
+  id: string;
+  week_start: string; // YYYY-MM-DD, the Monday of the week
+  down_rate: number;
+  created_at: string;
   user_id?: string;
 }
 
