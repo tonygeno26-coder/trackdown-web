@@ -103,3 +103,17 @@ export function fmtDateHeader(iso: string): string {
   if (sameDay(d, yest)) return "Yesterday";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
+
+/**
+ * "Started" label for an in-progress shift. A shift left running past
+ * midnight (forgotten "End Shift", lost connectivity, etc.) still says just
+ * a time-of-day with no date — which reads as "started this morning" even
+ * when it's actually been running for a day or more, making an accurate
+ * multi-hour Duration look like a bug. Only time-of-day shows for a shift
+ * that actually started today, so the common case is unchanged.
+ */
+export function fmtStartedLabel(iso: string): string {
+  const dateLabel = fmtDateHeader(iso);
+  const timeLabel = fmtTime(iso);
+  return dateLabel === "Today" ? timeLabel : `${timeLabel} · ${dateLabel}`;
+}

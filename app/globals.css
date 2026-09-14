@@ -17,10 +17,26 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   background-color: theme("colors.td.bg");
+  position: relative;
+}
+
+/*
+ * `background-attachment: fixed` on a scrolling element is a known iOS
+ * WebKit scroll-jank bug (Capacitor's WKWebView included) — it repaints the
+ * background on every scroll frame instead of compositing it, which shows up
+ * as content jittering/jumping mid-scroll. A genuinely fixed-position layer
+ * behind the content achieves the same "background doesn't scroll" look
+ * without hitting that repaint path.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: theme("colors.td.bg");
   background-image:
     radial-gradient(ellipse 100% 50% at 50% -20%, color-mix(in srgb, #c8202f 8%, transparent), transparent 70%),
     radial-gradient(ellipse 80% 40% at 80% 0%, color-mix(in srgb, #eceef0 3%, transparent), transparent 60%);
-  background-attachment: fixed;
 }
 
 @media (prefers-reduced-motion: reduce) {
