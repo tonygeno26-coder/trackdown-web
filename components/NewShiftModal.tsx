@@ -264,7 +264,7 @@ export default function NewShiftModal({
                   placeholder="0"
                   value={taxPct}
                   onChange={(e) => setTaxPct(e.target.value)}
-                  className="flex-1 border-none bg-transparent py-3 font-mono text-[15px] font-semibold text-td-cream focus:outline-none"
+                  className="flex-1 border-none bg-transparent py-3 font-mono text-[16px] font-semibold text-td-cream focus:outline-none"
                 />
                 <span className="font-mono text-td-muted">%</span>
               </div>
@@ -295,7 +295,7 @@ export default function NewShiftModal({
                       placeholder="0"
                       value={taxPct}
                       onChange={(e) => setTaxPct(e.target.value)}
-                      className="flex-1 border-none bg-transparent py-3 font-mono text-[15px] font-semibold text-td-cream focus:outline-none"
+                      className="flex-1 border-none bg-transparent py-3 font-mono text-[16px] font-semibold text-td-cream focus:outline-none"
                     />
                     <span className="font-mono text-td-muted">%</span>
                   </div>
@@ -316,7 +316,7 @@ export default function NewShiftModal({
                           max="100"
                           value={tieredRateBelow}
                           onChange={(e) => setTieredRateBelow(e.target.value)}
-                          className="flex-1 border-none bg-transparent py-3 font-mono text-[15px] font-semibold text-td-cream focus:outline-none"
+                          className="flex-1 border-none bg-transparent py-3 font-mono text-[16px] font-semibold text-td-cream focus:outline-none"
                         />
                         <span className="font-mono text-td-muted">%</span>
                       </div>
@@ -331,7 +331,7 @@ export default function NewShiftModal({
                           max="100"
                           value={tieredRateAbove}
                           onChange={(e) => setTieredRateAbove(e.target.value)}
-                          className="flex-1 border-none bg-transparent py-3 font-mono text-[15px] font-semibold text-td-cream focus:outline-none"
+                          className="flex-1 border-none bg-transparent py-3 font-mono text-[16px] font-semibold text-td-cream focus:outline-none"
                         />
                         <span className="font-mono text-td-muted">%</span>
                       </div>

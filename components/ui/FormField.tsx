@@ -2,8 +2,11 @@
 
 import { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 
+// 16px avoids iOS Safari/WKWebView's auto-zoom-on-focus behavior, which
+// triggers on any focused text input rendered under 16px and visibly jerks
+// the whole page (including fixed-position elements) as it zooms back out.
 export const inputClass =
-  "min-h-[48px] w-full rounded-xl border border-td-border bg-td-bg/80 px-3.5 py-3 text-[15px] text-td-cream focus:outline focus:outline-2 focus:outline-td-gold/60 disabled:opacity-45";
+  "min-h-[48px] w-full rounded-xl border border-td-border bg-td-bg/80 px-3.5 py-3 text-[16px] text-td-cream focus:outline focus:outline-2 focus:outline-td-gold/60 disabled:opacity-45";
 
 export function FormField({
   label,
@@ -50,7 +53,7 @@ export function NumericInput({
       <input
         type="number"
         inputMode="decimal"
-        className={`flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[15px] font-semibold text-td-cream focus:outline-none disabled:opacity-45 ${className}`}
+        className={`flex-1 border-none bg-transparent py-3 pl-1 font-mono text-[16px] font-semibold text-td-cream focus:outline-none disabled:opacity-45 ${className}`}
         {...props}
       />
     </div>

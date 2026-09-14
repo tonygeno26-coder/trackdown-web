@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Home, BarChart3, GraduationCap, History, Settings, Wallet } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,9 +22,45 @@ export default function BottomNav({
   active: AppTab;
   onChange: (tab: AppTab) => void;
 }) {
+  const navRef = useRef<HTMLElement>(null);
+  const [topPx, setTopPx] = useState<number | null>(null);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const recalc = () => {
+      const nav = navRef.current;
+      if (!nav) return;
+      // iOS WKWebView can leave `position: fixed; bottom: 0` elements
+      // anchored against a stale (pre-keyboard) viewport height after the
+      // on-screen keyboard finishes showing/hiding — window.innerHeight is
+      // already back to its correct value by then, but the bottom-anchored
+      // fixed layout doesn't get redone until the next real scroll event
+      // forces it. `visualViewport` stays accurate the whole time, so drive
+      // the nav's position from it directly (as an explicit `top`, computed
+      // fresh on every visualViewport change) instead of trusting the
+      // browser's own bottom-anchor calculation.
+      const height = nav.getBoundingClientRect().height;
+      setTopPx(vv.offsetTop + vv.height - height);
+    };
+
+    recalc();
+    vv.addEventListener("resize", recalc);
+    vv.addEventListener("scroll", recalc);
+    return () => {
+      vv.removeEventListener("resize", recalc);
+      vv.removeEventListener("scroll", recalc);
+    };
+  }, []);
+
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-td-border/70 bg-td-bg/90 backdrop-blur-lg"
+      ref={navRef}
+      style={topPx !== null ? { top: `${topPx}px`, bottom: "auto" } : undefined}
+      className={`fixed inset-x-0 z-40 border-t border-td-border/70 bg-td-bg/90 backdrop-blur-lg ${
+        topPx === null ? "bottom-0" : ""
+      }`}
       aria-label="Main navigation"
     >
       <div className="mx-auto flex max-w-[520px] items-stretch px-0.5 pb-[env(safe-area-inset-bottom)] pt-0.5">

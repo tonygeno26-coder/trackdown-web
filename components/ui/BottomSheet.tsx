@@ -24,10 +24,37 @@ export function BottomSheet({
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Locking scroll via `overflow: hidden` toggling is a known source of
+    // stale/stuck `position: fixed` rendering in WebKit — the browser
+    // doesn't reliably repaint fixed siblings (e.g. BottomNav) when the
+    // scrolling context's overflow changes, so they can appear to keep
+    // whatever position they had at the moment of the toggle until the next
+    // scroll event forces recalculation. Locking via `position: fixed` +
+    // restoring the scroll offset avoids that repaint path entirely, and
+    // also fixes iOS's rubber-band bleed-through that plain overflow:hidden
+    // doesn't prevent there anyway.
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+
     return () => {
-      document.body.style.overflow = prev;
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      window.scrollTo(0, scrollY);
     };
   }, [open]);
 
