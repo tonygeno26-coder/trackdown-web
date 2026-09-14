@@ -129,7 +129,7 @@ function TrackdownApp() {
   }
 
   return (
-    <div className="min-h-screen bg-td-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {error && (
         <div className="mx-auto mt-2.5 max-w-[520px] px-5">
           <div className="rounded-xl border border-td-red/50 bg-td-red/10 px-4 py-2.5 text-center text-[13px] text-red-300">
