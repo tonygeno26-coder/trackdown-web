@@ -1,13 +1,14 @@
 import { supabase } from "./supabase";
 import { Shift } from "./types";
 
-/** Legacy pre-isolation shifts with no owner — visible to any authenticated user via a narrow RLS policy. */
+/**
+ * Legacy pre-isolation shifts with no owner. Fetched via a SECURITY DEFINER
+ * RPC (not a standing RLS SELECT policy) so they're only ever exposed to the
+ * one-time claim flow that calls this function — not to every authenticated
+ * user's regular shift queries.
+ */
 export async function fetchUnclaimedShifts(): Promise<{ shifts: Shift[]; error: string | null }> {
-  const { data, error } = await supabase
-    .from("shifts")
-    .select("*")
-    .is("user_id", null)
-    .order("start_time", { ascending: false });
+  const { data, error } = await supabase.rpc("get_unclaimed_shifts");
 
   if (error) return { shifts: [], error: error.message };
   return { shifts: (data ?? []) as Shift[], error: null };
