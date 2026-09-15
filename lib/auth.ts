@@ -108,13 +108,41 @@ export async function signOutUser(): Promise<{ error: string | null }> {
 export const AUTH_CALLBACK_URL = "com.desertspore.trackdown://auth-callback";
 
 /**
+ * Apple App Review has no access to a real inbox, so magic-link sign-in is
+ * impossible for them to complete. This exact email — and only this exact
+ * email — signs straight into a dedicated, permanent, password-based
+ * Supabase account (pre-seeded with demo shifts/sessions) instead of
+ * sending a real email. It's given to Apple in App Store Connect's Sign-In
+ * Information notes. A real user can't stumble into it: the check is an
+ * exact-string match, not a pattern, and nothing about the sign-in form
+ * hints at it or accepts it as input.
+ *
+ * The password is deliberately NOT a literal here — it's a NEXT_PUBLIC_ env
+ * var (same trust level as the Supabase anon key: shipped in the client
+ * bundle either way, since this whole flow runs client-side) so it never
+ * sits in git history. Set it in .env.local for dev and in Railway's
+ * environment variables for production.
+ */
+const APP_REVIEW_EMAIL = "appreview@trackdownpoker.com";
+const APP_REVIEW_PASSWORD = process.env.NEXT_PUBLIC_APP_REVIEW_PASSWORD ?? "";
+
+/**
  * Sends a magic-link email that upgrades the current anonymous session to a
  * permanent one, in place. This deliberately does NOT sign in fresh — that
  * would mint a new auth.uid() and orphan every shift already tied to this
  * device's existing anonymous identity. Linking the email onto the existing
  * session keeps auth.uid() unchanged, so all of it stays visible.
  */
-export async function sendMagicLink(email: string): Promise<{ error: string | null }> {
+export async function sendMagicLink(email: string): Promise<{ error: string | null; signedInDirectly?: boolean }> {
+  if (APP_REVIEW_PASSWORD && email.trim().toLowerCase() === APP_REVIEW_EMAIL) {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: APP_REVIEW_EMAIL,
+      password: APP_REVIEW_PASSWORD,
+    });
+    if (error) return { error: error.message };
+    return { error: null, signedInDirectly: true };
+  }
+
   const { userId } = await ensureAuthSession();
   if (!userId) return { error: "Could not establish a session to link this email to." };
 
