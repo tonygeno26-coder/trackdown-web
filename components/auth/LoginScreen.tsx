@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Mail, Check, AlertTriangle } from "lucide-react";
 import { sendMagicLink } from "@/lib/auth";
+import { useAuth } from "@/components/auth/AuthProvider";
 import {
   readLastAuthLinkError,
   clearLastAuthLinkError,
@@ -13,6 +14,7 @@ import { AppScreen, SurfaceCard, PrimaryButton, FormField, TextInput } from "@/c
 import TrackdownHeader from "@/components/TrackdownHeader";
 
 export default function LoginScreen() {
+  const { refreshSession } = useAuth();
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -40,10 +42,19 @@ export default function LoginScreen() {
     if (sending || !email.trim()) return;
     setSending(true);
     setError(null);
-    const { error: err } = await sendMagicLink(email.trim());
+    const { error: err, signedInDirectly } = await sendMagicLink(email.trim());
     setSending(false);
     if (err) {
       setError(err);
+      return;
+    }
+    // App Review's fixed account signs in immediately (see sendMagicLink).
+    // signInWithPassword replacing an existing anonymous session doesn't
+    // reliably fire onAuthStateChange (confirmed: the session updates and
+    // persists correctly, but the listener never runs) — so pull the app
+    // past this screen explicitly rather than waiting on that event.
+    if (signedInDirectly) {
+      await refreshSession();
       return;
     }
     setSent(true);

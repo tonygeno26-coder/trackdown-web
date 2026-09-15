@@ -32,6 +32,15 @@ interface AuthContextValue {
   claimCompleted: boolean | null;
   completeClaim: () => Promise<void>;
   retryAuth: () => Promise<void>;
+  /**
+   * Re-reads the current Supabase client session and syncs React state to
+   * it — no sign-out, no anonymous fallback. For flows that change the
+   * session directly (e.g. supabase.auth.signInWithPassword) without going
+   * through the normal magic-link path: onAuthStateChange does not
+   * reliably fire for that transition, so callers need to trigger the
+   * re-sync themselves. Unlike retryAuth(), this never clears the session.
+   */
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -121,6 +130,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setClaimCompleted(true);
   }, [userId]);
 
+  const refreshSession = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    applySession(data.session);
+  }, [applySession]);
+
   const value = useMemo(
     () => ({
       userId,
@@ -131,8 +145,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       claimCompleted,
       completeClaim,
       retryAuth: () => initAuth(true),
+      refreshSession,
     }),
-    [userId, ready, authError, authDiagnosticCode, isAnonymous, claimCompleted, completeClaim, initAuth]
+    [
+      userId,
+      ready,
+      authError,
+      authDiagnosticCode,
+      isAnonymous,
+      claimCompleted,
+      completeClaim,
+      initAuth,
+      refreshSession,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
