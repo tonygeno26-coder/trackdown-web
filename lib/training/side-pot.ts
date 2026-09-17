@@ -66,6 +66,75 @@ export function layersMatchExpected(
   return true;
 }
 
+export interface SidePotLayerGrade {
+  index: number;
+  ok: boolean;
+  userAmount: number;
+  expectedAmount: number;
+  userEligibleIds: string[];
+  expectedEligibleIds: string[];
+}
+
+export interface SidePotGradeResult {
+  correct: boolean;
+  layers: SidePotLayerGrade[];
+  countMessage?: string;
+}
+
+function eligibleSetsMatch(a: string[], b: string[]): boolean {
+  const aSet = new Set([...a].sort());
+  const eSet = new Set([...b].sort());
+  if (aSet.size !== eSet.size) return false;
+  for (const id of aSet) if (!eSet.has(id)) return false;
+  return true;
+}
+
+/** Grade user-built layers against expected (main pot first). */
+export function gradeSidePotLayers(
+  userLayers: { amount: number; eligibleIds: string[] }[],
+  expected: { amount: number; eligibleIds: string[] }[],
+  tolerance = 0.01
+): SidePotGradeResult {
+  const layers: SidePotLayerGrade[] = [];
+  let countMessage: string | undefined;
+
+  if (userLayers.length > expected.length) {
+    countMessage = "Too many boundaries — you split one layer that shouldn't be split.";
+  } else if (userLayers.length < expected.length) {
+    countMessage = "Too few boundaries — you combined two layers that should be separate.";
+  }
+
+  const maxLen = Math.max(userLayers.length, expected.length);
+  for (let i = 0; i < maxLen; i++) {
+    const user = userLayers[i];
+    const exp = expected[i];
+    if (!user || !exp) {
+      layers.push({
+        index: i,
+        ok: false,
+        userAmount: user?.amount ?? 0,
+        expectedAmount: exp?.amount ?? 0,
+        userEligibleIds: user?.eligibleIds ?? [],
+        expectedEligibleIds: exp?.eligibleIds ?? [],
+      });
+      continue;
+    }
+    const amountOk = Math.abs(user.amount - exp.amount) <= tolerance;
+    const eligibleOk = eligibleSetsMatch(user.eligibleIds, exp.eligibleIds);
+    layers.push({
+      index: i,
+      ok: amountOk && eligibleOk,
+      userAmount: user.amount,
+      expectedAmount: exp.amount,
+      userEligibleIds: user.eligibleIds,
+      expectedEligibleIds: exp.eligibleIds,
+    });
+  }
+
+  const correct = !countMessage && layers.every((l) => l.ok);
+  return { correct, layers, countMessage };
+}
+
 export function distributeOddChips(
   totalAmount: number,
   winnerCount: number,

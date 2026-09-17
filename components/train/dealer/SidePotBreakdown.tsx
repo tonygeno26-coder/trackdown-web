@@ -4,14 +4,20 @@ import { SidePotQuestion } from "@/lib/training/dealer-types";
 import { calculateSidePots, layersMatchExpected } from "@/lib/training/side-pot";
 import SidePotTable from "./SidePotTable";
 
-export function SidePotQuestionView({ question }: { question: SidePotQuestion }) {
+export function SidePotQuestionView({
+  question,
+  hideLayers = false,
+}: {
+  question: SidePotQuestion;
+  hideLayers?: boolean;
+}) {
   return (
     <div className="space-y-4">
       <div>
         <h3 className="font-display text-[15px] font-bold text-td-cream">{question.title}</h3>
         <p className="mt-1 text-[13px] leading-relaxed text-td-muted">{question.description}</p>
       </div>
-      <SidePotTable players={question.players} />
+      <SidePotTable players={question.players} hideLayers={hideLayers} />
     </div>
   );
 }
