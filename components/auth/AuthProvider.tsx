@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import {
   clearCachedUserId,
   ensureAuthSession,
+  signOutUser,
   type AuthDiagnosticCode,
 } from "@/lib/auth";
 import { hasCompletedClaim, markClaimCompleted } from "@/lib/profile";
@@ -28,6 +29,8 @@ interface AuthContextValue {
   authDiagnosticCode: AuthDiagnosticCode | null;
   /** True until the user has linked an email via the magic-link flow. */
   isAnonymous: boolean;
+  /** The linked email, once one exists. Null for anonymous sessions. */
+  email: string | null;
   /** Whether the one-time claim-your-past-shifts flow is done. Null while still loading. */
   claimCompleted: boolean | null;
   completeClaim: () => Promise<void>;
@@ -41,6 +44,15 @@ interface AuthContextValue {
    * re-sync themselves. Unlike retryAuth(), this never clears the session.
    */
   refreshSession: () => Promise<void>;
+  /**
+   * Ends the session (local + server) and lands back on the login screen —
+   * does NOT create a new anonymous session afterward (that's retryAuth's
+   * job, for the separate "fresh test session" case). Never touches server
+   * data: only clears the local auth token and this device's local
+   * prefs/progress, the same reset that already happens whenever the
+   * signed-in user changes on this device.
+   */
+  signOut: () => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -51,6 +63,7 @@ const AUTH_ERROR_MESSAGE =
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [userId, setUserId] = useState<string | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(true);
+  const [email, setEmail] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authDiagnosticCode, setAuthDiagnosticCode] = useState<AuthDiagnosticCode | null>(null);
@@ -67,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     lastUserIdRef.current = nextUserId;
     setUserId(nextUserId);
     setIsAnonymous(nextIsAnonymous);
+    setEmail(session?.user?.email ?? null);
   }, []);
 
   const initAuth = useCallback(async (forceClear = false) => {
@@ -135,6 +149,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     applySession(data.session);
   }, [applySession]);
 
+  const signOut = useCallback(async () => {
+    const { error } = await signOutUser();
+    // Reset this device's local prefs/progress the same way an auth-user
+    // change already does — a different person signing in next shouldn't
+    // see the previous account's cached training progress.
+    clearUserLocalState();
+    // signOutUser() clears the session locally and on the server, but
+    // (like signInWithPassword) that doesn't reliably fire
+    // onAuthStateChange in this client, so re-sync state explicitly rather
+    // than wait for a listener that may not run.
+    await refreshSession();
+    return { error };
+  }, [refreshSession]);
+
   const value = useMemo(
     () => ({
       userId,
@@ -142,10 +170,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authError,
       authDiagnosticCode,
       isAnonymous,
+      email,
       claimCompleted,
       completeClaim,
       retryAuth: () => initAuth(true),
       refreshSession,
+      signOut,
     }),
     [
       userId,
@@ -153,10 +183,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       authError,
       authDiagnosticCode,
       isAnonymous,
+      email,
       claimCompleted,
       completeClaim,
       initAuth,
       refreshSession,
+      signOut,
     ]
   );
 
