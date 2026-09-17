@@ -3,33 +3,38 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { Shift, PlayingSession } from "@/lib/types";
+import { Shift, PlayingSession, WeeklyRate } from "@/lib/types";
 import BottomNav, { AppTab } from "@/components/navigation/BottomNav";
 import HomeDashboard from "@/components/home/HomeDashboard";
 import StatsScreen from "@/components/stats/StatsScreen";
+import PayScreen from "@/components/pay/PayScreen";
 import HistoryScreen from "@/components/history/HistoryScreen";
 import SettingsScreen from "@/components/settings/SettingsScreen";
 import TrainScreen from "@/components/train/TrainScreen";
 import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
+import LoginScreen from "@/components/auth/LoginScreen";
+import ClaimScreen from "@/components/auth/ClaimScreen";
 import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
 import DeveloperPreviewGuard from "@/components/dev/DeveloperPreviewGuard";
 import { LoadingState, ErrorState } from "@/components/ui";
 import { fadeSlide } from "@/components/ui/motion";
 
 function TrackdownApp() {
-  const { userId, ready, authError, authDiagnosticCode, retryAuth } = useAuth();
+  const { userId, ready, authError, authDiagnosticCode, isAnonymous, claimCompleted, retryAuth } = useAuth();
   const [shifts, setShifts] = useState<Shift[] | null>(null);
   const [playingSessions, setPlayingSessions] = useState<PlayingSession[] | null>(null);
+  const [weeklyRates, setWeeklyRates] = useState<WeeklyRate[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<AppTab>("home");
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     if (!userId) return;
-    const [shiftsRes, sessionsRes] = await Promise.all([
+    const [shiftsRes, sessionsRes, ratesRes] = await Promise.all([
       supabase.from("shifts").select("*").order("start_time", { ascending: false }),
       supabase.from("playing_sessions").select("*").order("start_time", { ascending: false }),
+      supabase.from("weekly_rates").select("*"),
     ]);
 
     if (shiftsRes.error) {
@@ -40,22 +45,28 @@ function TrackdownApp() {
       setLoadError(sessionsRes.error.message);
       return;
     }
+    if (ratesRes.error) {
+      setLoadError(ratesRes.error.message);
+      return;
+    }
 
     setLoadError(null);
     setShifts(shiftsRes.data as Shift[]);
     setPlayingSessions(sessionsRes.data as PlayingSession[]);
+    setWeeklyRates(ratesRes.data as WeeklyRate[]);
   }, [userId]);
 
   useEffect(() => {
     if (!ready || !userId) return;
     setShifts(null);
     setPlayingSessions(null);
+    setWeeklyRates(null);
     loadData();
   }, [ready, userId, loadData]);
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-td-bg">
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
         <LoadingState message="Loading Trackdown…" />
       </div>
     );
@@ -63,7 +74,7 @@ function TrackdownApp() {
 
   if (authError) {
     return (
-      <div className="min-h-screen bg-td-bg">
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
         <ErrorState
           message={authError}
           onRetry={retryAuth}
@@ -73,24 +84,52 @@ function TrackdownApp() {
     );
   }
 
+  if (isAnonymous) {
+    return (
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-10">
+        <main className="mx-auto max-w-[520px] px-5 pt-2">
+          <LoginScreen />
+        </main>
+      </div>
+    );
+  }
+
+  if (claimCompleted === null) {
+    return (
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
+        <LoadingState message="Loading Trackdown…" />
+      </div>
+    );
+  }
+
+  if (claimCompleted === false) {
+    return (
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-10">
+        <main className="mx-auto max-w-[520px] px-5 pt-2">
+          <ClaimScreen onDone={loadData} />
+        </main>
+      </div>
+    );
+  }
+
   if (loadError) {
     return (
-      <div className="min-h-screen bg-td-bg">
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
         <ErrorState message={loadError} onRetry={loadData} />
       </div>
     );
   }
 
-  if (shifts === null || playingSessions === null) {
+  if (shifts === null || playingSessions === null || weeklyRates === null) {
     return (
-      <div className="min-h-screen bg-td-bg">
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
         <LoadingState message="Loading Trackdown…" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-td-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
+    <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {error && (
         <div className="mx-auto mt-2.5 max-w-[520px] px-5">
           <div className="rounded-xl border border-td-red/50 bg-td-red/10 px-4 py-2.5 text-center text-[13px] text-red-300">
@@ -118,6 +157,14 @@ function TrackdownApp() {
               />
             )}
             {tab === "stats" && <StatsScreen shifts={shifts} playingSessions={playingSessions} />}
+            {tab === "pay" && (
+              <PayScreen
+                shifts={shifts}
+                weeklyRates={weeklyRates}
+                onWeeklyRatesChange={setWeeklyRates}
+                setError={setError}
+              />
+            )}
             {tab === "train" && <TrainScreen />}
             {tab === "history" && (
               <HistoryScreen

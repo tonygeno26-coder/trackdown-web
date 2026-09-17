@@ -1,5 +1,5 @@
 import { DownBlock, Shift, ShiftType } from "./types";
-import { estimatedTournamentEarnings, netTips } from "./blocks";
+import { estimatedTournamentEarnings, fmtMoney, netAfterTax, netTips, turnInsTotal } from "./blocks";
 
 export type DealingSegment = "tournament" | "cash";
 
@@ -99,15 +99,45 @@ export function combinedShiftEarnings(shift: Shift): CombinedShiftEarnings {
   };
 }
 
+export function isHostessShift(shift: Shift): boolean {
+  return shift.type === "homegame" && shift.role === "hostess";
+}
+
 /** Gross cash tips for a shift (cash-style blocks only). */
 export function shiftCashGrossTips(shift: Shift): number {
+  if (isHostessShift(shift)) return turnInsTotal(shift.turn_ins);
   if (shift.is_lump_sum) return shift.lump_sum_tips || 0;
   if (isCombinedShift(shift)) return cashTipsFromBlocks(cashBlocksForShift(shift));
   return shift.blocks.reduce((sum, b) => sum + (b.status === "done" ? b.tips : 0), 0);
 }
 
+/** Net amount owed for a hostess shift, after its chosen tax model. */
+export function hostessNetTotal(shift: Shift): number {
+  const gross = turnInsTotal(shift.turn_ins);
+  return netAfterTax(
+    gross,
+    shift.tax_model,
+    shift.house_tax_pct,
+    shift.tiered_threshold,
+    shift.tiered_rate_below,
+    shift.tiered_rate_above
+  );
+}
+
+/** Human-readable tax breakdown for a hostess shift's tax model. */
+export function hostessTaxBreakdownLabel(shift: Shift): string {
+  if (shift.tax_model === "tiered") {
+    const gross = turnInsTotal(shift.turn_ins);
+    const below = Math.min(gross, shift.tiered_threshold);
+    const above = Math.max(0, gross - shift.tiered_threshold);
+    return `${fmtMoney(below)} at ${shift.tiered_rate_below}% + ${fmtMoney(above)} at ${shift.tiered_rate_above}%`;
+  }
+  return `${shift.house_tax_pct}% house cut`;
+}
+
 /** Total dealer earnings for display/stats. */
 export function shiftTotalEarnings(shift: Shift): number {
+  if (isHostessShift(shift)) return hostessNetTotal(shift);
   if (shift.type === "tournament") {
     return estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) ?? 0;
   }

@@ -1,4 +1,4 @@
-import { DownBlock } from "./types";
+import { DownBlock, TaxModel, TurnIn } from "./types";
 
 const SHIFT_MINUTES = 8 * 60;
 
@@ -70,6 +70,27 @@ export function netTips(grossTips: number, taxPct: number): number {
   return grossTips * (1 - taxPct / 100);
 }
 
+export function netAfterTax(
+  grossAmount: number,
+  taxModel: TaxModel | null,
+  flatPct: number,
+  tieredThreshold: number,
+  tieredRateBelow: number,
+  tieredRateAbove: number
+): number {
+  if (taxModel === "tiered") {
+    const belowAmount = Math.min(grossAmount, tieredThreshold);
+    const aboveAmount = Math.max(0, grossAmount - tieredThreshold);
+    const taxOwed = belowAmount * (tieredRateBelow / 100) + aboveAmount * (tieredRateAbove / 100);
+    return grossAmount - taxOwed;
+  }
+  return grossAmount * (1 - flatPct / 100);
+}
+
+export function turnInsTotal(turnIns: TurnIn[]): number {
+  return turnIns.reduce((sum, t) => sum + t.amount, 0);
+}
+
 export function isNowWithin(startISO: string, endISO: string): boolean {
   const now = Date.now();
   return now >= new Date(startISO).getTime() && now < new Date(endISO).getTime();
@@ -102,4 +123,18 @@ export function fmtDateHeader(iso: string): string {
   if (sameDay(d, today)) return "Today";
   if (sameDay(d, yest)) return "Yesterday";
   return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+/**
+ * "Started" label for an in-progress shift. A shift left running past
+ * midnight (forgotten "End Shift", lost connectivity, etc.) still says just
+ * a time-of-day with no date — which reads as "started this morning" even
+ * when it's actually been running for a day or more, making an accurate
+ * multi-hour Duration look like a bug. Only time-of-day shows for a shift
+ * that actually started today, so the common case is unchanged.
+ */
+export function fmtStartedLabel(iso: string): string {
+  const dateLabel = fmtDateHeader(iso);
+  const timeLabel = fmtTime(iso);
+  return dateLabel === "Today" ? timeLabel : `${timeLabel} · ${dateLabel}`;
 }

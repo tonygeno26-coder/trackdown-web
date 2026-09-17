@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Shift } from "@/lib/types";
-import { fmtMoney, netTips } from "@/lib/blocks";
+import { fmtMoney, netAfterTax, netTips } from "@/lib/blocks";
+import { hostessTaxBreakdownLabel, isHostessShift } from "@/lib/shift-segments";
 import { DealingBottomSheet } from "@/components/dealing/DealingUi";
 import {
   FormField,
@@ -26,7 +27,19 @@ export default function EndShiftModal({
   onConfirm: (settledStatus: "yes" | "no" | "partial" | null, settledAmount: number | null) => boolean | Promise<boolean>;
 }) {
   const isHomegame = shift.type === "homegame";
-  const netOwed = isHomegame && shift.house_tax_pct > 0 ? netTips(grossTotal, shift.house_tax_pct) : grossTotal;
+  const isHostess = isHostessShift(shift);
+  const netOwed = isHostess
+    ? netAfterTax(
+        grossTotal,
+        shift.tax_model,
+        shift.house_tax_pct,
+        shift.tiered_threshold,
+        shift.tiered_rate_below,
+        shift.tiered_rate_above
+      )
+    : isHomegame && shift.house_tax_pct > 0
+      ? netTips(grossTotal, shift.house_tax_pct)
+      : grossTotal;
   const [choice, setChoice] = useState<"yes" | "no" | "partial" | null>(null);
   const [partialAmount, setPartialAmount] = useState("");
   const [confirming, setConfirming] = useState(false);
@@ -93,10 +106,16 @@ export default function EndShiftModal({
       <SurfaceCard className="px-4 py-3.5 text-center">
         <span className="block text-[11.5px] uppercase tracking-wide text-td-muted">Total owed</span>
         <span className="block font-mono text-3xl font-semibold text-td-goldsoft">{fmtMoney(netOwed)}</span>
-        {shift.house_tax_pct > 0 && (
+        {isHostess ? (
           <span className="mt-1 block text-[11px] text-td-muted">
-            {fmtMoney(grossTotal)} gross · {shift.house_tax_pct}% house cut
+            {fmtMoney(grossTotal)} gross · {hostessTaxBreakdownLabel(shift)}
           </span>
+        ) : (
+          shift.house_tax_pct > 0 && (
+            <span className="mt-1 block text-[11px] text-td-muted">
+              {fmtMoney(grossTotal)} gross · {shift.house_tax_pct}% house cut
+            </span>
+          )
         )}
       </SurfaceCard>
 

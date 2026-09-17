@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus, Spade } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { Shift, DownBlock, ShiftType, DealingSegment } from "@/lib/types";
+import { Shift, DownBlock, ShiftType, TaxModel, DealingSegment } from "@/lib/types";
 import { buildBlocks, extendBlocks } from "@/lib/blocks";
 import { resolveActiveSegment, shiftCashGrossTips } from "@/lib/shift-segments";
 import ShiftPanel from "@/components/ShiftPanel";
@@ -46,8 +46,46 @@ export default function DealingSection({
         house_tax_pct: houseTaxPct,
         hourly_rate: hourlyRate,
         active_segment: type === "tournament_cash" ? "tournament" : null,
+        role: type === "homegame" ? "dealer" : null,
         status: "active",
         blocks: buildBlocks(startTime, downLength),
+      })
+      .select()
+      .single();
+
+    if (err) {
+      setError(err.message);
+      return;
+    }
+    onShiftsChange([data as Shift, ...shifts]);
+    setNewShiftOpen(false);
+  };
+
+  const createHostessShift = async (
+    title: string,
+    taxModel: TaxModel,
+    flatPct: number,
+    tieredThreshold: number,
+    tieredRateBelow: number,
+    tieredRateAbove: number
+  ) => {
+    const { data, error: err } = await supabase
+      .from("shifts")
+      .insert({
+        type: "homegame",
+        role: "hostess",
+        down_length: 30,
+        start_time: new Date().toISOString(),
+        title,
+        house_tax_pct: taxModel === "flat" ? flatPct : 0,
+        tax_model: taxModel,
+        tiered_threshold: tieredThreshold,
+        tiered_rate_below: tieredRateBelow,
+        tiered_rate_above: tieredRateAbove,
+        hourly_rate: null,
+        status: "active",
+        blocks: [],
+        turn_ins: [],
       })
       .select()
       .single();
@@ -179,7 +217,13 @@ export default function DealingSection({
         />
       )}
 
-      {newShiftOpen && <NewShiftModal onCancel={() => setNewShiftOpen(false)} onCreate={createShift} />}
+      {newShiftOpen && (
+        <NewShiftModal
+          onCancel={() => setNewShiftOpen(false)}
+          onCreate={createShift}
+          onCreateHostess={createHostessShift}
+        />
+      )}
 
       {blockSheet && (
         <BlockSheet

@@ -8,6 +8,7 @@ import {
   fmtMoney,
   fmtMoneyPrecise,
   fmtHourlyRate,
+  fmtStartedLabel,
   fmtTime,
   isNowWithin,
   netTips,
@@ -108,7 +109,7 @@ export default function DealerCockpit({
             {shift.title && (
               <p className="mt-1 font-display text-[16px] font-bold text-td-cream">{shift.title}</p>
             )}
-            <p className="mt-1 text-[12px] text-td-muted">Started {fmtTime(shift.start_time)}</p>
+            <p className="mt-1 text-[12px] text-td-muted">Started {fmtStartedLabel(shift.start_time)}</p>
           </div>
           <button
             onClick={onEndShift}

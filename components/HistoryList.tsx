@@ -7,6 +7,7 @@ import { fmtMoney, fmtDateHeader, fmtTime, fmtHourlyRate, fmtMoneyPrecise, estim
 import {
   combinedShiftEarnings,
   isCombinedShift,
+  isHostessShift,
   segmentBreakdownLabel,
   shiftTypeLabel,
   shiftTotalEarnings,
@@ -99,6 +100,7 @@ export default function HistoryList({
         const done = shift.blocks.filter((b) => b.status === "done").length;
         const doneBlocks = shift.blocks.filter((b) => b.status === "done");
         const isCombined = isCombinedShift(shift);
+        const isHostess = isHostessShift(shift);
         const tournamentEarnings =
           shift.type === "tournament" ? estimatedTournamentEarnings(shift.blocks, shift.hourly_rate) : null;
         const combined = isCombined ? combinedShiftEarnings(shift) : null;
@@ -118,14 +120,17 @@ export default function HistoryList({
                   {fmtDateHeader(shift.start_time)} · {shiftTypeLabel(shift.type)}
                 </span>
                 <span className="text-[11.5px] text-td-muted">
-                  {fmtTime(shift.start_time)} · {shift.down_length}m downs ·{" "}
-                  {shift.type === "tournament"
-                    ? `${done} downs logged`
-                    : isCombined
-                      ? breakdown ?? `${done} downs logged`
-                      : shift.is_lump_sum
-                        ? "logged as one total"
-                        : `${done}/${shift.blocks.length} logged`}
+                  {fmtTime(shift.start_time)}
+                  {!isHostess && ` · ${shift.down_length}m downs`} ·{" "}
+                  {isHostess
+                    ? `${shift.turn_ins.length} turn-in${shift.turn_ins.length === 1 ? "" : "s"} logged`
+                    : shift.type === "tournament"
+                      ? `${done} downs logged`
+                      : isCombined
+                        ? breakdown ?? `${done} downs logged`
+                        : shift.is_lump_sum
+                          ? "logged as one total"
+                          : `${done}/${shift.blocks.length} logged`}
                 </span>
                 {shift.type === "tournament" && shift.hourly_rate != null && tournamentEarnings != null && (
                   <span className="text-[11px] font-semibold mt-0.5 text-td-muted">
@@ -170,17 +175,36 @@ export default function HistoryList({
                 {isCombined && breakdown && (
                   <p className="text-[12.5px] font-semibold text-td-muted px-1">{breakdown}</p>
                 )}
-                {!shift.is_lump_sum &&
-                  doneBlocks.map((b) => (
-                    <BlockRow key={b.id} block={b} shift={shift} onTap={() => onBlockTap(shift, b)} />
-                  ))}
-                {!shift.is_lump_sum && doneBlocks.length === 0 && (
-                  <p className="text-[12.5px] text-td-muted py-2 px-1">No downs logged this shift.</p>
-                )}
-                {shift.is_lump_sum && (
-                  <p className="text-[12.5px] text-td-muted py-2 px-1">
-                    This shift was logged as one total rather than per-down.
-                  </p>
+                {isHostess ? (
+                  shift.turn_ins.length === 0 ? (
+                    <p className="text-[12.5px] text-td-muted py-2 px-1">No turn-ins logged this shift.</p>
+                  ) : (
+                    shift.turn_ins.map((t) => (
+                      <div
+                        key={t.id}
+                        className="flex items-center gap-3 rounded-[11px] border border-td-border bg-td-surface px-3.5 py-3"
+                      >
+                        <span className="font-mono text-[12.5px] text-td-muted min-w-[62px]">{fmtTime(t.timestamp)}</span>
+                        <span className="flex-1" />
+                        <span className="font-mono font-semibold text-[14.5px] text-td-goldsoft">{fmtMoney(t.amount)}</span>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  <>
+                    {!shift.is_lump_sum &&
+                      doneBlocks.map((b) => (
+                        <BlockRow key={b.id} block={b} shift={shift} onTap={() => onBlockTap(shift, b)} />
+                      ))}
+                    {!shift.is_lump_sum && doneBlocks.length === 0 && (
+                      <p className="text-[12.5px] text-td-muted py-2 px-1">No downs logged this shift.</p>
+                    )}
+                    {shift.is_lump_sum && (
+                      <p className="text-[12.5px] text-td-muted py-2 px-1">
+                        This shift was logged as one total rather than per-down.
+                      </p>
+                    )}
+                  </>
                 )}
                 <button
                   onClick={() => onDeleteShift(shift.id)}
