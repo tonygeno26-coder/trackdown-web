@@ -4,7 +4,7 @@ import { compareHands, evaluateHoldem, evaluatePlo, evaluateOmahaLow, findWinnin
 import { pickAdaptiveDealerModule, buildTodaysFocus } from "@/lib/training/adaptive-dealer";
 import { createDefaultDealerSkillProgress, migrateDealerV2ToV3 } from "@/lib/training/dealer-progress";
 import { createDefaultProgress, loadTrainingProgress } from "@/lib/training/progress";
-import { SIDE_POT_QUESTIONS } from "@/lib/training/side-pot-questions";
+import { SIDE_POT_QUESTIONS, getSidePotQuestion } from "@/lib/training/side-pot-questions";
 import { validateTrainingContent } from "@/lib/training/content-validation";
 
 describe("side pot calculations", () => {
@@ -42,6 +42,30 @@ describe("side pot calculations", () => {
       expect(layersMatchExpected(calc.layers, q.expectedLayers)).toBe(true);
       expect(calc.totalPot).toBe(q.totalPot);
     }
+  });
+
+  it("equal-stack all-in produces a single main pot (no side pots)", () => {
+    const q = getSidePotQuestion("sp-52");
+    expect(q).toBeDefined();
+    const calc = calculateSidePots(q!.players);
+    expect(calc.layers.length).toBe(1);
+    expect(calc.totalPot).toBe(300);
+    expect(countSidePots(q!.players)).toBe(0);
+  });
+
+  it("uncalled bet chips are excluded from pot total", () => {
+    const q = getSidePotQuestion("sp-53");
+    expect(q).toBeDefined();
+    const calc = calculateSidePots(q!.players);
+    expect(calc.totalPot).toBe(150);
+    expect(calc.layers.length).toBe(1);
+    expect(q!.steps.some((s) => s.toLowerCase().includes("uncalled"))).toBe(true);
+  });
+
+  it("heads-up uncalled overbet excludes unmatched chips from pot", () => {
+    const q = getSidePotQuestion("sp-57");
+    expect(q).toBeDefined();
+    expect(calculateSidePots(q!.players).totalPot).toBe(100);
   });
 });
 
