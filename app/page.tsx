@@ -15,6 +15,9 @@ import { AppSettingsProvider } from "@/components/settings/AppSettingsContext";
 import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 import LoginScreen from "@/components/auth/LoginScreen";
 import ClaimScreen from "@/components/auth/ClaimScreen";
+import PaywallScreen from "@/components/paywall/PaywallScreen";
+import { isGrandfathered } from "@/lib/entitlements";
+import { configurePurchases, hasActiveProEntitlement } from "@/lib/subscription";
 import { DeveloperPreviewProvider } from "@/components/dev/DeveloperPreviewProvider";
 import DeveloperPreviewGuard from "@/components/dev/DeveloperPreviewGuard";
 import { LoadingState, ErrorState } from "@/components/ui";
@@ -28,6 +31,7 @@ function TrackdownApp() {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<AppTab>("home");
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   const loadData = useCallback(async () => {
     if (!userId) return;
@@ -63,6 +67,37 @@ function TrackdownApp() {
     setWeeklyRates(null);
     loadData();
   }, [ready, userId, loadData]);
+
+  // Grandfathered beta testers (and the App Review account) skip the
+  // paywall entirely, regardless of RevenueCat status. Everyone else needs
+  // an active "pro" entitlement (a live trial counts as active).
+  useEffect(() => {
+    if (!ready || !userId || isAnonymous || claimCompleted !== true) return;
+    let cancelled = false;
+    setHasAccess(null);
+    (async () => {
+      // Local testing only: NEXT_PUBLIC_FORCE_PAYWALL=true (never set on
+      // Railway) skips the grandfather check so a grandfathered account can
+      // see the paywall.
+      const forcePaywall = process.env.NEXT_PUBLIC_FORCE_PAYWALL === "true";
+      if (!forcePaywall && (await isGrandfathered(userId))) {
+        if (!cancelled) setHasAccess(true);
+        return;
+      }
+      let active = false;
+      try {
+        await configurePurchases(userId);
+        active = await hasActiveProEntitlement();
+      } catch {
+        // RevenueCat unavailable (e.g. plain web, no native plugin) — treat
+        // as no entitlement rather than hanging on the loading screen.
+      }
+      if (!cancelled) setHasAccess(active);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, userId, isAnonymous, claimCompleted]);
 
   if (!ready) {
     return (
@@ -107,6 +142,24 @@ function TrackdownApp() {
       <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-10">
         <main className="mx-auto max-w-[520px] px-5 pt-2">
           <ClaimScreen onDone={loadData} />
+        </main>
+      </div>
+    );
+  }
+
+  if (hasAccess === null) {
+    return (
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg">
+        <LoadingState message="Loading Trackdown…" />
+      </div>
+    );
+  }
+
+  if (hasAccess === false) {
+    return (
+      <div className="min-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] bg-td-bg pb-10">
+        <main className="mx-auto max-w-[520px] px-5 pt-2">
+          <PaywallScreen userId={userId as string} onUnlocked={() => setHasAccess(true)} />
         </main>
       </div>
     );
