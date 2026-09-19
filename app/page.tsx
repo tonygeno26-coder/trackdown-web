@@ -76,13 +76,22 @@ function TrackdownApp() {
     let cancelled = false;
     setHasAccess(null);
     (async () => {
-      const grandfathered = await isGrandfathered(userId);
-      if (grandfathered) {
+      // Local testing only: NEXT_PUBLIC_FORCE_PAYWALL=true (never set on
+      // Railway) skips the grandfather check so a grandfathered account can
+      // see the paywall.
+      const forcePaywall = process.env.NEXT_PUBLIC_FORCE_PAYWALL === "true";
+      if (!forcePaywall && (await isGrandfathered(userId))) {
         if (!cancelled) setHasAccess(true);
         return;
       }
-      await configurePurchases(userId);
-      const active = await hasActiveProEntitlement();
+      let active = false;
+      try {
+        await configurePurchases(userId);
+        active = await hasActiveProEntitlement();
+      } catch {
+        // RevenueCat unavailable (e.g. plain web, no native plugin) — treat
+        // as no entitlement rather than hanging on the loading screen.
+      }
       if (!cancelled) setHasAccess(active);
     })();
     return () => {

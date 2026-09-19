@@ -58,7 +58,16 @@ export interface PurchaseOutcome {
 export async function purchaseMonthly(pkg: PurchasesPackage): Promise<PurchaseOutcome> {
   try {
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
-    return { success: Boolean(customerInfo.entitlements.active[PRO_ENTITLEMENT_ID]), cancelled: false, error: null };
+    const success = Boolean(customerInfo.entitlements.active[PRO_ENTITLEMENT_ID]);
+    if (success) return { success: true, cancelled: false, error: null };
+    const active = Object.keys(customerInfo.entitlements.active);
+    return {
+      success: false,
+      cancelled: false,
+      error: `Purchase completed, but the "${PRO_ENTITLEMENT_ID}" entitlement isn't active. Active entitlements: ${
+        active.length ? active.join(", ") : "none"
+      }.`,
+    };
   } catch (e) {
     const err = e as { code?: PURCHASES_ERROR_CODE; message?: string };
     if (err.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) {
