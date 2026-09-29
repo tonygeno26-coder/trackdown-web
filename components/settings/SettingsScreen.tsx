@@ -9,6 +9,7 @@ import DefaultsSettings from "@/components/settings/DefaultsSettings";
 import DealingDefaultsSettings from "@/components/settings/DealingDefaultsSettings";
 import AppSettingsSection from "@/components/settings/AppSettingsSection";
 import AccountSection from "@/components/settings/AccountSection";
+import TrackdownProSection from "@/components/settings/TrackdownProSection";
 import DeveloperSettings from "@/components/settings/DeveloperSettings";
 import { AppTab } from "@/components/navigation/BottomNav";
 import { Shift, PlayingSession } from "@/lib/types";
@@ -103,6 +104,7 @@ export default function SettingsScreen({
         onUnlockDeveloperMode={handleUnlockDeveloperMode}
         unlockMessage={unlockMessage}
       />
+      <TrackdownProSection />
       <AccountSection />
 
       {settings.developer_mode && (

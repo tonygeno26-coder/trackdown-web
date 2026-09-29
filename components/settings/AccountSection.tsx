@@ -5,19 +5,21 @@ import { LogOut } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { SettingsSection } from "@/components/settings/SettingsUi";
 import { SecondaryButton } from "@/components/ui";
+import DeleteAccountFlow from "@/components/settings/DeleteAccountFlow";
 
 /**
- * Only rendered for a real, signed-in (non-anonymous) user — an anonymous
- * session has no linked account to sign out of. See DeveloperSettings for
- * the separate dev-only "new session" tool, which intentionally does the
- * opposite (creates a fresh anonymous session instead of landing on login).
+ * Email-linked users see this under Settings → Account. Anonymous (guest)
+ * users see the same block on the sign-in screen — they cannot open Settings
+ * until an email is linked, but their Supabase auth id still owns stored data.
  */
 export default function AccountSection() {
   const { isAnonymous, email, signOut } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (isAnonymous) return null;
+  const accountDescription = isAnonymous
+    ? "Guest account (not linked to an email)"
+    : (email ?? undefined);
 
   const handleSignOut = async () => {
     setSigningOut(true);
@@ -28,15 +30,18 @@ export default function AccountSection() {
   };
 
   return (
-    <SettingsSection title="Account" description={email ?? undefined}>
-      <SecondaryButton type="button" disabled={signingOut} onClick={handleSignOut}>
-        <LogOut size={16} /> {signingOut ? "Signing Out…" : "Sign Out"}
-      </SecondaryButton>
+    <SettingsSection title="Account" description={accountDescription}>
+      {!isAnonymous && (
+        <SecondaryButton type="button" disabled={signingOut} onClick={handleSignOut}>
+          <LogOut size={16} /> {signingOut ? "Signing Out…" : "Sign Out"}
+        </SecondaryButton>
+      )}
       {error && (
         <p role="alert" className="text-[12.5px] text-red-300">
           {error}
         </p>
       )}
+      <DeleteAccountFlow isGuest={isAnonymous} />
     </SettingsSection>
   );
 }

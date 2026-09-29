@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "./supabase";
 import { clearSupabaseAuthStorage } from "./auth-storage";
+import { APP_REVIEW_EMAIL } from "./app-review";
 import {
   classifyAuthError,
   type AuthDiagnosticCode,
@@ -123,7 +124,6 @@ export const AUTH_CALLBACK_URL = "com.desertspore.trackdown://auth-callback";
  * sits in git history. Set it in .env.local for dev and in Railway's
  * environment variables for production.
  */
-const APP_REVIEW_EMAIL = "appreview@trackdownpoker.com";
 const APP_REVIEW_PASSWORD = process.env.NEXT_PUBLIC_APP_REVIEW_PASSWORD ?? "";
 
 /**

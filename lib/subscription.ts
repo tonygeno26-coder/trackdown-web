@@ -13,6 +13,11 @@ const PRO_ENTITLEMENT_ID = process.env.NEXT_PUBLIC_REVENUECAT_ENTITLEMENT_ID || 
 
 let configured = false;
 
+/** Clears the in-memory RevenueCat configure flag (e.g. after account deletion). */
+export function resetPurchasesClient(): void {
+  configured = false;
+}
+
 /** No-ops if the API key isn't set (e.g. local dev without RevenueCat configured) or if already configured this session. */
 export async function configurePurchases(appUserId: string): Promise<void> {
   if (!REVENUECAT_API_KEY || configured) return;

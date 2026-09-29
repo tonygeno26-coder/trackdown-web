@@ -12,6 +12,7 @@ import {
 } from "@/lib/native-auth-link";
 import { AppScreen, SurfaceCard, PrimaryButton, FormField, TextInput } from "@/components/ui";
 import TrackdownHeader from "@/components/TrackdownHeader";
+import AccountSection from "@/components/settings/AccountSection";
 
 export default function LoginScreen() {
   const { refreshSession } = useAuth();
@@ -132,6 +133,9 @@ export default function LoginScreen() {
           </>
         )}
       </SurfaceCard>
+      <div className="mt-8">
+        <AccountSection />
+      </div>
     </AppScreen>
   );
 }
