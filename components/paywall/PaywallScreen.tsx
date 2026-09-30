@@ -11,6 +11,7 @@ import {
 } from "@/lib/subscription";
 import { AppScreen, SurfaceCard, PrimaryButton, SecondaryButton, LoadingState } from "@/components/ui";
 import TrackdownHeader from "@/components/TrackdownHeader";
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from "@/lib/legal-links";
 
 const FEATURES = [
   "Track every dealer shift, down, and tip",
@@ -78,10 +79,11 @@ export default function PaywallScreen({ userId, onUnlocked }: { userId: string; 
           <Sparkles size={22} />
         </div>
         <h2 className="font-display text-lg font-bold uppercase tracking-[1px] text-td-cream">
-          Try Trackdown Free
+          Trackdown Pro Monthly
         </h2>
         <p className="mt-2 text-[13.5px] leading-relaxed text-td-muted">
-          7 days free, then {offer?.priceString ?? "$4.99"}/month. Cancel anytime.
+          7-day free trial, then {offer?.priceString ?? "$4.99"}/month. Cancel anytime in Apple
+          Subscriptions.
         </p>
 
         <ul className="mx-auto mt-5 max-w-[320px] space-y-2.5 text-left">
@@ -111,6 +113,15 @@ export default function PaywallScreen({ userId, onUnlocked }: { userId: string; 
           <SecondaryButton type="button" disabled={restoring} onClick={handleRestore}>
             {restoring ? "Restoring…" : "Restore Purchases"}
           </SecondaryButton>
+          <p className="pt-2 text-[11.5px] leading-relaxed text-td-muted">
+            <a href={TERMS_OF_USE_URL} target="_blank" rel="noopener noreferrer" className="underline">
+              Terms of Use
+            </a>
+            {" · "}
+            <a href={PRIVACY_POLICY_URL} target="_blank" rel="noopener noreferrer" className="underline">
+              Privacy Policy
+            </a>
+          </p>
         </div>
       </SurfaceCard>
     </AppScreen>
