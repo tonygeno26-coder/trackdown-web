@@ -19,7 +19,7 @@ import {
   type AuthDiagnosticCode,
 } from "@/lib/auth";
 import { hasCompletedClaim, markClaimCompleted } from "@/lib/profile";
-import { registerAuthLinkHandling } from "@/lib/native-auth-link";
+import { registerAuthLinkHandling, AUTH_LINK_SUCCESS_EVENT } from "@/lib/native-auth-link";
 import { clearUserLocalState } from "@/lib/user-storage";
 
 interface AuthContextValue {
@@ -103,12 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, [applySession]);
 
+  const refreshSession = useCallback(async () => {
+    await supabase.auth.refreshSession();
+    const { data } = await supabase.auth.getSession();
+    applySession(data.session);
+  }, [applySession]);
+
   useEffect(() => {
     if (initStartedRef.current) return;
     initStartedRef.current = true;
     initAuth();
 
     const unregisterAuthLink = registerAuthLinkHandling();
+
+    const onAuthLinkSuccess = () => {
+      void refreshSession();
+    };
+    window.addEventListener(AUTH_LINK_SUCCESS_EVENT, onAuthLinkSuccess);
 
     const {
       data: { subscription },
@@ -119,8 +130,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
       unregisterAuthLink();
+      window.removeEventListener(AUTH_LINK_SUCCESS_EVENT, onAuthLinkSuccess);
     };
-  }, [applySession, initAuth]);
+  }, [applySession, initAuth, refreshSession]);
 
   // Once a real (non-anonymous) identity is active, load whether they've
   // already been through the one-time claim flow.
@@ -143,11 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await markClaimCompleted(userId);
     setClaimCompleted(true);
   }, [userId]);
-
-  const refreshSession = useCallback(async () => {
-    const { data } = await supabase.auth.getSession();
-    applySession(data.session);
-  }, [applySession]);
 
   const signOut = useCallback(async () => {
     const { error } = await signOutUser();

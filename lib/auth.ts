@@ -6,6 +6,14 @@ import {
   type AuthDiagnosticCode,
   type AuthSessionResult,
 } from "./auth-diagnostics";
+import {
+  mapGuestLinkSendError,
+  mapLinkExchangeError,
+  mapReturningSignInSendError,
+  type AuthEmailSendResult,
+} from "./auth-email-flow";
+
+export type { AuthEmailSendResult };
 
 let cachedUserId: string | null = null;
 let authInitPromise: Promise<AuthSessionResult> | null = null;
@@ -127,31 +135,85 @@ export const AUTH_CALLBACK_URL = "com.desertspore.trackdown://auth-callback";
 const APP_REVIEW_PASSWORD = process.env.NEXT_PUBLIC_APP_REVIEW_PASSWORD ?? "";
 
 /**
- * Sends a magic-link email that upgrades the current anonymous session to a
- * permanent one, in place. This deliberately does NOT sign in fresh — that
- * would mint a new auth.uid() and orphan every shift already tied to this
- * device's existing anonymous identity. Linking the email onto the existing
- * session keeps auth.uid() unchanged, so all of it stays visible.
+ * Apple App Review sign-in — unchanged password path for the dedicated review
+ * account only (exact email match).
  */
-export async function sendMagicLink(email: string): Promise<{ error: string | null; signedInDirectly?: boolean }> {
-  if (APP_REVIEW_PASSWORD && email.trim().toLowerCase() === APP_REVIEW_EMAIL) {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: APP_REVIEW_EMAIL,
-      password: APP_REVIEW_PASSWORD,
-    });
-    if (error) return { error: error.message };
-    return { error: null, signedInDirectly: true };
+export async function tryAppReviewPasswordSignIn(
+  email: string
+): Promise<{ error: string | null; signedInDirectly?: boolean }> {
+  if (!APP_REVIEW_PASSWORD || email.trim().toLowerCase() !== APP_REVIEW_EMAIL) {
+    return { error: null, signedInDirectly: false };
+  }
+  const { error } = await supabase.auth.signInWithPassword({
+    email: APP_REVIEW_EMAIL,
+    password: APP_REVIEW_PASSWORD,
+  });
+  if (error) return { error: error.message };
+  return { error: null, signedInDirectly: true };
+}
+
+/**
+ * First-time guest linking: attach email to the current anonymous session so
+ * auth.uid() (and all shifts on this device) stay attached.
+ */
+export async function sendGuestEmailLink(email: string): Promise<AuthEmailSendResult | { signedInDirectly: true }> {
+  const review = await tryAppReviewPasswordSignIn(email);
+  if (review.signedInDirectly) return { signedInDirectly: true };
+  if (review.error) {
+    return mapGuestLinkSendError({ message: review.error });
   }
 
   const { userId } = await ensureAuthSession();
-  if (!userId) return { error: "Could not establish a session to link this email to." };
+  if (!userId) {
+    return {
+      ok: false,
+      kind: "session_unavailable",
+      message: "Could not establish a guest session on this device. Retry after checking your connection.",
+    };
+  }
 
   const { error } = await supabase.auth.updateUser(
-    { email },
+    { email: email.trim() },
     { emailRedirectTo: AUTH_CALLBACK_URL }
   );
-  if (error) return { error: error.message };
-  return { error: null };
+  if (error) return mapGuestLinkSendError(error);
+  return { ok: true, kind: "sent" };
+}
+
+/**
+ * Returning-user sign-in: magic link for an existing account. Replaces the
+ * current guest session on this device once the link is opened — the anonymous
+ * user is not deleted server-side automatically.
+ */
+export async function sendReturningUserSignIn(
+  email: string
+): Promise<AuthEmailSendResult | { signedInDirectly: true }> {
+  const review = await tryAppReviewPasswordSignIn(email);
+  if (review.signedInDirectly) return { signedInDirectly: true };
+  if (review.error) {
+    return mapReturningSignInSendError({ message: review.error });
+  }
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim(),
+    options: {
+      emailRedirectTo: AUTH_CALLBACK_URL,
+      shouldCreateUser: false,
+    },
+  });
+  if (error) return mapReturningSignInSendError(error);
+  return { ok: true, kind: "sent" };
+}
+
+/** @deprecated Use sendGuestEmailLink or sendReturningUserSignIn. */
+export async function sendMagicLink(email: string): Promise<{ error: string | null; signedInDirectly?: boolean }> {
+  const result = await sendGuestEmailLink(email);
+  if ("signedInDirectly" in result && result.signedInDirectly) {
+    return { error: null, signedInDirectly: true };
+  }
+  if ("ok" in result && result.ok) return { error: null };
+  if ("ok" in result && !result.ok) return { error: result.message };
+  return { error: "Could not send email." };
 }
 
 /**
@@ -170,7 +232,16 @@ export async function completeAuthFromUrl(url: string): Promise<{ error: string 
   if (!code) return { error: null };
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  return { error: error?.message ?? null };
+  if (error) {
+    return { error: mapLinkExchangeError(error.message) };
+  }
+
+  const { error: refreshError } = await supabase.auth.refreshSession();
+  if (refreshError) {
+    return { error: mapLinkExchangeError(refreshError.message) };
+  }
+
+  return { error: null };
 }
 
 export type { AuthDiagnosticCode, AuthSessionResult };

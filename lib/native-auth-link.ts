@@ -2,7 +2,7 @@ import { completeAuthFromUrl } from "./auth";
 
 const LAST_ERROR_KEY = "trackdown_last_auth_link_error";
 
-/** PKCE codes are single-use — avoid exchanging the same one twice if two sources both deliver it. */
+/** PKCE codes are single-use — only mark successful exchanges as processed. */
 const processedCodes = new Set<string>();
 
 function extractCode(url: string): string | null {
@@ -14,28 +14,56 @@ function extractCode(url: string): string | null {
 }
 
 export const AUTH_LINK_ERROR_EVENT = "trackdown:auth-link-error";
+export const AUTH_LINK_SUCCESS_EVENT = "trackdown:auth-link-success";
 
 function recordOutcome(source: string, error: string | null): void {
   if (!error) return;
   console.error(`[auth-link:${source}] failed:`, error);
   const record: AuthLinkError = { source, error, at: new Date().toISOString() };
-  try {
-    localStorage.setItem(LAST_ERROR_KEY, JSON.stringify(record));
-  } catch {
-    // localStorage unavailable — best effort only.
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LAST_ERROR_KEY, JSON.stringify(record));
+    } catch {
+      // localStorage unavailable — best effort only.
+    }
   }
   // A failure here almost always happens after LoginScreen has already
   // mounted (e.g. cold-launch getLaunchUrl resolves asynchronously) — a
   // mount-time-only localStorage read would miss it until the next reload.
-  window.dispatchEvent(new CustomEvent<AuthLinkError>(AUTH_LINK_ERROR_EVENT, { detail: record }));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent<AuthLinkError>(AUTH_LINK_ERROR_EVENT, { detail: record }));
+  }
 }
 
-async function handleIncomingUrl(url: string, source: string): Promise<void> {
+function notifySuccess(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(LAST_ERROR_KEY);
+  } catch {
+    // ignore
+  }
+  window.dispatchEvent(new CustomEvent(AUTH_LINK_SUCCESS_EVENT));
+}
+
+export type AuthLinkHandleResult = "skipped" | "success" | "error";
+
+/**
+ * Exchanges a deep-link / redirect URL once. Failed exchanges stay retryable
+ * with a newly generated link; duplicate successful deliveries are ignored.
+ */
+export async function handleAuthLinkUrl(url: string, source: string): Promise<AuthLinkHandleResult> {
   const code = extractCode(url);
-  if (!code || processedCodes.has(code)) return;
-  processedCodes.add(code);
+  if (!code || processedCodes.has(code)) return "skipped";
+
   const { error } = await completeAuthFromUrl(url);
-  recordOutcome(source, error);
+  if (error) {
+    recordOutcome(source, error);
+    return "error";
+  }
+
+  processedCodes.add(code);
+  notifySuccess();
+  return "success";
 }
 
 /**
@@ -52,8 +80,7 @@ async function handleIncomingUrl(url: string, source: string): Promise<void> {
  * - appUrlOpen listener: the app was already running (warm) and the deep
  *   link just brought it to the foreground — this fires reliably then.
  * Both can end up delivering the same URL for one cold launch on some
- * platforms, hence the processedCodes dedup (a PKCE code is single-use;
- * a second exchange attempt fails and looks identical to this same bug).
+ * platforms, hence the processedCodes dedup after a successful exchange.
  *
  * Any failure is also written to localStorage (LAST_ERROR_KEY) — read via
  * readLastAuthLinkError() — since there's no way to attach a remote console
@@ -65,8 +92,8 @@ async function handleIncomingUrl(url: string, source: string): Promise<void> {
 export function registerAuthLinkHandling(): () => void {
   if (typeof window === "undefined") return () => {};
 
-  handleIncomingUrl(window.location.href, "web-url").then(() => {
-    if (window.location.search.includes("code=")) {
+  handleAuthLinkUrl(window.location.href, "web-url").then((result) => {
+    if (result !== "skipped" && window.location.search.includes("code=")) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   });
@@ -84,12 +111,12 @@ export function registerAuthLinkHandling(): () => void {
 
       mod.App.getLaunchUrl().then((launch) => {
         if (!cancelled && launch?.url) {
-          handleIncomingUrl(launch.url, "cold-launch");
+          handleAuthLinkUrl(launch.url, "cold-launch");
         }
       });
 
       mod.App.addListener("appUrlOpen", ({ url }) => {
-        handleIncomingUrl(url, "warm-resume");
+        handleAuthLinkUrl(url, "warm-resume");
       }).then((handle) => {
         if (cancelled) {
           handle.remove();
@@ -131,4 +158,9 @@ export function clearLastAuthLinkError(): void {
   } catch {
     // ignore
   }
+}
+
+/** @internal Vitest only — resets PKCE dedup state between cases. */
+export function resetProcessedAuthCodesForTests(): void {
+  processedCodes.clear();
 }
